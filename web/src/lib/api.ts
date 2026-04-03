@@ -1,0 +1,101 @@
+import {
+  AdminOrderDetail,
+  AdminOrdersResponse,
+  FulfillmentQueueItem,
+  OrderFormOptions,
+  PaymentReviewItem,
+  PriceBoardResponse,
+  PublicOrderPayload,
+  PublicOrderResult,
+  PublicOrderStatus,
+  StoreInfo
+} from "../types";
+
+interface ApiEnvelope<T> {
+  data: T;
+}
+
+interface ApiErrorEnvelope {
+  error: {
+    code: string;
+    message: string;
+    fields?: Record<string, string>;
+  };
+}
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {})
+    },
+    ...init
+  });
+
+  if (!response.ok) {
+    const errorPayload = (await response.json().catch(() => null)) as ApiErrorEnvelope | null;
+    throw new Error(errorPayload?.error.message ?? "요청 처리 중 오류가 발생했습니다.");
+  }
+
+  const payload = (await response.json()) as ApiEnvelope<T>;
+  return payload.data;
+}
+
+export const api = {
+  getStore: () => request<StoreInfo>("/public/store"),
+  getPriceBoard: () => request<PriceBoardResponse>("/public/price-board/today"),
+  getOrderOptions: () => request<OrderFormOptions>("/public/order-form/options"),
+  createOrder: (payload: PublicOrderPayload) =>
+    request<PublicOrderResult>("/public/orders", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+  getPublicOrder: (publicToken: string) => request<PublicOrderStatus>(`/public/orders/${publicToken}`),
+  getAdminOrders: (search?: string) =>
+    request<AdminOrdersResponse>(`/admin/orders${search ? `?search=${encodeURIComponent(search)}` : ""}`),
+  getAdminOrder: (orderId: string) => request<AdminOrderDetail>(`/admin/orders/${orderId}`),
+  submitQuote: (
+    orderId: string,
+    payload: {
+      item_subtotal: number;
+      processing_fee_total: number;
+      delivery_fee_total: number;
+      discount_total: number;
+      final_amount: number;
+      receipt_type_note?: string;
+      payment_method_note?: string;
+      quote_note?: string;
+    }
+  ) =>
+    request(`/admin/orders/${orderId}/quote`, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+  confirmPayment: (orderId: string, confirmedAmount: number, note?: string) =>
+    request(`/admin/orders/${orderId}/payments/manual-confirm`, {
+      method: "POST",
+      body: JSON.stringify({
+        confirmed_amount: confirmedAmount,
+        note
+      })
+    }),
+  updateFulfillment: (
+    orderId: string,
+    payload: {
+      fulfillment_status?: string;
+      fulfillment_subtype?: string;
+      parcel_tracking_no?: string;
+      packing_note?: string;
+    }
+  ) =>
+    request(`/admin/orders/${orderId}/fulfillment`, {
+      method: "PATCH",
+      body: JSON.stringify(payload)
+    }),
+  getPaymentReviewQueue: () =>
+    request<{ review_queue: PaymentReviewItem[] }>("/admin/payment-review"),
+  getFulfillments: () =>
+    request<{ fulfillments: FulfillmentQueueItem[] }>("/admin/fulfillments")
+};

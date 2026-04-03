@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>seafood B2C 프로토타입</title>
+    <link
+      rel="stylesheet"
+      as="style"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <link
+      rel="stylesheet"
+      href="./styles.css"
+    />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">SEAFOOD B2C VISUAL PROTOTYPE</p>
+          <h1>카톡 주문을 매장 운영 화면으로 바꾸는 수산 소매 SaaS 시안</h1>
+          <p class="hero-text">
+            고객은 시세를 보고 주문하고, 매장은 금액 확정, 입금 확인, 출고, 반절 매칭까지
+            이어서 처리하는 흐름을 한 페이지에서 볼 수 있게 구성했습니다.
+          </p>
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <span>주문 접수</span>
+              <strong>1분 안에</strong>
+              <small>카톡 문의를 주문서로 전환</small>
+            </div>
+            <div class="hero-stat">
+              <span>입금 검토</span>
+              <strong>2건만</strong>
+              <small>애매한 거래만 따로 확인</small>
+            </div>
+            <div class="hero-stat">
+              <span>출고 대기</span>
+              <strong>6건</strong>
+              <small>픽업, 퀵, 택배를 분기 관리</small>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <a href="#customer-flow" class="primary-link">고객 화면 보기</a>
+            <a href="#admin-flow" class="secondary-link">관리자 화면 보기</a>
+          </div>
+        </div>
+        <aside class="hero-panel">
+          <p class="panel-title">토스형 UX 방향</p>
+          <ul class="bullet-list">
+            <li>첫 화면에서 중요한 정보만 바로 보이게</li>
+            <li>카드는 단순하게, 액션은 명확하게</li>
+            <li>버튼과 상태 변화는 짧고 부드럽게</li>
+            <li>고객은 모바일, 관리자는 대시보드형으로 분리</li>
+          </ul>
+          <div class="chip-row">
+            <span class="chip chip-accent">고객용 모바일</span>
+            <span class="chip">관리자용 데스크톱</span>
+            <span class="chip">정적 HTML</span>
+          </div>
+        </aside>
+      </header>
+
+      <section id="customer-flow" class="section">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">고객 흐름</p>
+            <h2>시세 확인부터 주문 상태 조회까지</h2>
+          </div>
+          <p class="section-text">
+            오픈카톡에 흩어져 있던 공지, 시세, 주문, 입금 안내를 모바일 여정으로 정리한
+            예시입니다.
+          </p>
+        </div>
+
+        <div class="phone-grid">
+          <article class="phone">
+            <div class="phone-top"></div>
+            <div class="screen">
+              <div class="screen-header">
+                <div>
+                  <p class="screen-label">고객 화면 01</p>
+                  <h3>오늘 시세 / 주문 가이드</h3>
+                </div>
+                <span class="status-pill">오늘 주문 가능</span>
+              </div>
+
+              <div class="market-card">
+                <div>
+                  <p class="store-name">윤호수산</p>
+                  <p class="store-sub">노량진수산시장 선어 82, 83번 자리</p>
+                </div>
+                <div class="contact-badge">문의 010-2221-1206</div>
+              </div>
+
+              <div class="notice-stack">
+                <div class="notice-card"><strong>당일택배</strong><span>평일 오전 9:30 전 주문 권장</span></div>
+                <div class="notice-card"><strong>카카오퀵</strong><span>픽업 2~3시간 전 주문 권장</span></div>
+              </div>
+
+              <table class="mini-table">
+                <thead>
+                  <tr><th>품목</th><th>규격</th><th>단가</th><th>상태</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>광어</td><td>3kg급</td><td>54,000</td><td><span class="tag available">주문가능</span></td></tr>
+                  <tr><td>보리숭어</td><td>1.2kg</td><td>38,000</td><td><span class="tag reserved">예약가능</span></td></tr>
+                  <tr><td>시마</td><td>2kg급</td><td>40,000</td><td><span class="tag soldout">완판</span></td></tr>
+                </tbody>
+              </table>
+
+              <div class="guide-box">
+                <p class="guide-title">주문 가이드</p>
+                <ul class="guide-list">
+                  <li>픽업 / 퀵 / 일반택배 / 당일택배 / 고속택배 지원</li>
+                  <li>회는 퀵 권장, 일반택배는 오로시 권장</li>
+                  <li>최종 금액은 손질비와 운임비 반영 후 확정</li>
+                </ul>
+              </div>
+
+              <button class="screen-button">주문하러 가기</button>
+            </div>
+          </article>
+
+          <article class="phone">
+            <div class="phone-top"></div>
+            <div class="screen">
+              <div class="screen-header">
+                <div>
+                  <p class="screen-label">고객 화면 02</p>
+                  <h3>주문서</h3>
+                </div>
+                <span class="status-pill muted">입력 단계</span>
+              </div>
+
+              <div class="form-block">
+                <p class="block-title">주문자 정보</p>
+                <div class="field-grid two-col">
+                  <label class="field"><span>주문자명</span><input value="홍길동" readonly /></label>
+                  <label class="field"><span>연락처</span><input value="010-1234-5678" readonly /></label>
+                </div>
+                <label class="field"><span>입금자명</span><input value="홍길동" readonly /></label>
+              </div>
+
+              <div class="form-block">
+                <p class="block-title">주문 내용</p>
+                <div class="field-grid two-col">
+                  <label class="field"><span>품목</span><input value="광어" readonly /></label>
+                  <label class="field"><span>규격 / 수량</span><input value="3kg / 1마리" readonly /></label>
+                </div>
+                <div class="segmented"><span class="segment active">전체 구매</span><span class="segment">반절 희망</span></div>
+                <div class="field-grid two-col">
+                  <label class="field"><span>손질방식</span><input value="오로시" readonly /></label>
+                  <label class="field"><span>포장 옵션</span><input value="진공포장 요청" readonly /></label>
+                </div>
+                <label class="field"><span>요청사항</span><textarea readonly>머리와 뼈도 같이 부탁드립니다.</textarea></label>
+              </div>
+
+              <div class="form-block">
+                <p class="block-title">수령 정보</p>
+                <div class="segmented"><span class="segment">픽업</span><span class="segment active">당일택배</span><span class="segment">퀵</span></div>
+                <div class="field-grid two-col">
+                  <label class="field"><span>날짜</span><input value="2026-04-03" readonly /></label>
+                  <label class="field"><span>시간</span><input value="15:00-16:00" readonly /></label>
+                </div>
+                <div class="field-grid two-col">
+                  <label class="field"><span>수령인명</span><input value="홍길동" readonly /></label>
+                  <label class="field"><span>연락처</span><input value="010-1234-5678" readonly /></label>
+                </div>
+                <label class="field"><span>주소</span><textarea readonly>서울시 동작구 ... 101동 101호</textarea></label>
+              </div>
+
+              <div class="inline-note">최종 금액은 손질비와 운임비 포함 후 확정됩니다.</div>
+              <button class="screen-button">주문 접수하기</button>
+            </div>
+          </article>
+
+          <article class="phone">
+            <div class="phone-top"></div>
+            <div class="screen">
+              <div class="screen-header">
+                <div>
+                  <p class="screen-label">고객 화면 03</p>
+                  <h3>주문 상태 조회</h3>
+                </div>
+                <span class="status-pill warning">입금 대기</span>
+              </div>
+
+              <div class="order-summary">
+                <div><p class="summary-title">주문번호</p><strong>YH-20260401-013</strong></div>
+                <div><p class="summary-title">수령방식</p><strong>당일택배</strong></div>
+              </div>
+
+              <div class="amount-panel">
+                <p class="amount-label">최종 금액</p>
+                <strong>65,000원</strong>
+                <span>하나은행 204-890473-61807 박광옥</span>
+              </div>
+
+              <ol class="status-timeline">
+                <li class="done"><strong>주문 접수 완료</strong><span>고객 주문서가 정상 접수되었습니다.</span></li>
+                <li class="done"><strong>최종 금액 확정</strong><span>원물 54,000원 + 손질비 4,000원 + 택배비 7,000원</span></li>
+                <li class="active"><strong>입금 확인 대기</strong><span>입금 후 자동 또는 수동 확인이 진행됩니다.</span></li>
+                <li><strong>포장 및 출고 준비</strong><span>입금 완료 후 손질과 송장 입력이 이어집니다.</span></li>
+              </ol>
+
+              <div class="cta-row">
+                <button class="ghost-button">문의하기</button>
+                <button class="screen-button compact">다시 조회</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="admin-flow" class="section">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">관리자 흐름</p>
+            <h2>주문, 정산, 입금, 출고를 한 화면에서</h2>
+          </div>
+          <p class="section-text">
+            대시보드에서 막힌 주문을 보고, 상세 화면에서 금액 확정과 입금 처리, 출고 상태 변경까지
+            이어서 처리하는 구성을 예시로 넣었습니다.
+          </p>
+        </div>
+
+        <div class="desktop-grid">
+          <article class="desktop-card browser-shell">
+            <div class="browser-top"><span></span><span></span><span></span></div>
+            <div class="desktop-body">
+              <div class="desktop-head">
+                <div>
+                  <p class="screen-label">관리자 화면 01</p>
+                  <h3>운영 대시보드</h3>
+                </div>
+                <div class="chip-row">
+                  <span class="chip chip-accent">오늘 주문 12건</span>
+                  <span class="chip">마감 전 확인 필요</span>
+                </div>
+              </div>
+
+              <div class="stat-grid">
+                <div class="stat-card"><span>금액확정대기</span><strong>3</strong></div>
+                <div class="stat-card"><span>미입금</span><strong>4</strong></div>
+                <div class="stat-card"><span>손질대기</span><strong>5</strong></div>
+                <div class="stat-card"><span>출고대기</span><strong>6</strong></div>
+              </div>
+
+              <div class="filter-row">
+                <span class="filter active">오늘주문</span><span class="filter">예약</span><span class="filter">미입금</span>
+                <span class="filter">픽업</span><span class="filter">택배</span><span class="filter">매칭대기</span>
+              </div>
+
+              <table class="dashboard-table">
+                <thead>
+                  <tr><th>주문번호</th><th>주문자</th><th>품목요약</th><th>금액상태</th><th>입금상태</th><th>출고상태</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>YH-013</td><td>홍길동</td><td>광어 3kg / 오로시</td><td><span class="tag reserved">확정완료</span></td><td><span class="tag soldout">미입금</span></td><td>당일택배 대기</td></tr>
+                  <tr><td>YH-014</td><td>김철수</td><td>보리숭어 1.2kg / 회</td><td><span class="tag available">확정완료</span></td><td><span class="tag available">입금완료</span></td><td>퀵 대기</td></tr>
+                  <tr><td>YH-015</td><td>박영희</td><td>광어 반절 희망</td><td><span class="tag reserved">매칭 대기</span></td><td><span class="tag reserved">금액 미확정</span></td><td>픽업 예정</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="desktop-card">
+            <div class="desktop-head">
+              <div>
+                <p class="screen-label">관리자 화면 02</p>
+                <h3>주문 상세 / 정산 / 출고</h3>
+              </div>
+              <span class="status-pill">pricing_pending</span>
+            </div>
+
+            <div class="detail-layout">
+              <div class="detail-column">
+                <div class="info-panel">
+                  <p class="panel-heading">주문 기본 정보</p>
+                  <ul class="detail-list">
+                    <li><strong>주문번호</strong><span>YH-20260401-013</span></li>
+                    <li><strong>주문자</strong><span>홍길동 / 010-1234-5678</span></li>
+                    <li><strong>수령방식</strong><span>당일택배</span></li>
+                    <li><strong>요청시간</strong><span>4월 3일 15:00-16:00</span></li>
+                  </ul>
+                </div>
+                <div class="info-panel">
+                  <p class="panel-heading">주문 내용</p>
+                  <div class="order-item-card"><strong>광어 / 3kg / 오로시 / 진공포장</strong><span>머리와 뼈 동봉 요청</span></div>
+                  <div class="address-box"><strong>수령지</strong><span>서울시 동작구 ... 101동 101호</span></div>
+                </div>
+              </div>
+
+              <div class="detail-column">
+                <div class="info-panel accent-panel">
+                  <p class="panel-heading">정산</p>
+                  <ul class="price-list">
+                    <li><span>원물금액</span><strong>54,000원</strong></li>
+                    <li><span>손질비</span><strong>4,000원</strong></li>
+                    <li><span>운임비</span><strong>7,000원</strong></li>
+                    <li class="total"><span>최종금액</span><strong>65,000원</strong></li>
+                  </ul>
+                  <div class="action-row">
+                    <button class="ghost-button compact">금액 저장</button>
+                    <button class="screen-button compact">입금 요청</button>
+                  </div>
+                </div>
+
+                <div class="info-panel">
+                  <p class="panel-heading">입금</p>
+                  <div class="status-line"><span>입금자명 홍길동</span><span class="tag soldout">미입금</span></div>
+                  <div class="action-row">
+                    <button class="ghost-button compact">검토 필요</button>
+                    <button class="screen-button compact">수동 확인</button>
+                  </div>
+                </div>
+
+                <div class="info-panel">
+                  <p class="panel-heading">출고</p>
+                  <div class="field-grid two-col dense">
+                    <label class="field"><span>택배유형</span><input value="당일택배" readonly /></label>
+                    <label class="field"><span>송장번호</span><input value="미입력" readonly /></label>
+                  </div>
+                  <div class="action-row">
+                    <button class="ghost-button compact">송장 저장</button>
+                    <button class="screen-button compact">발송 완료</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="timeline-strip">
+              <div class="timeline-card"><strong>12:20</strong><span>주문 접수</span></div>
+              <div class="timeline-card"><strong>12:33</strong><span>금액 확정</span></div>
+              <div class="timeline-card active-card"><strong>현재</strong><span>입금 대기</span></div>
+            </div>
+          </article>
+
+          <article class="desktop-card split-panel">
+            <div class="panel-half">
+              <div class="desktop-head">
+                <div>
+                  <p class="screen-label">관리자 화면 03</p>
+                  <h3>입금 검토 큐</h3>
+                </div>
+              </div>
+
+              <div class="review-card">
+                <div class="review-top"><strong>YH-021 / 기대금액 65,000원</strong><span class="tag reserved">후보 2건</span></div>
+                <p class="muted-text">동일 금액 주문 2건, 입금자명 불일치로 자동 확정 보류</p>
+                <div class="candidate-row"><span>65,000원 / 입금자 박OO / 적합도 78점</span><button class="screen-button compact">승인</button></div>
+                <div class="candidate-row"><span>65,000원 / 입금자 홍길동 / 적합도 92점</span><button class="ghost-button compact">재검토</button></div>
+              </div>
+            </div>
+
+            <div class="panel-half">
+              <div class="desktop-head">
+                <div>
+                  <p class="screen-label">관리자 화면 04</p>
+                  <h3>반절 매칭 관리</h3>
+                </div>
+              </div>
+
+              <div class="matching-card">
+                <div class="matching-head"><strong>광어 3kg 반절 매칭</strong><span class="score-chip">적합도 88점</span></div>
+                <div class="match-row">
+                  <div><p class="mini-label">주문 A</p><strong>홍길동 / 픽업 / 15:00</strong><span>오로시 / 반절 희망</span></div>
+                  <div><p class="mini-label">주문 B</p><strong>김철수 / 픽업 / 15:30</strong><span>오로시 / 반절 희망</span></div>
+                </div>
+                <div class="action-row">
+                  <button class="screen-button compact">매칭 확정</button>
+                  <button class="ghost-button compact">보류</button>
+                  <button class="ghost-button compact">실패 처리</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="desktop-card">
+            <div class="desktop-head">
+              <div>
+                <p class="screen-label">관리자 화면 05</p>
+                <h3>출고 관리</h3>
+              </div>
+              <div class="chip-row">
+                <span class="chip chip-accent">택배 3건</span>
+                <span class="chip">퀵 2건</span>
+                <span class="chip">픽업 1건</span>
+              </div>
+            </div>
+
+            <div class="tab-row"><span class="tab">직접 픽업</span><span class="tab">퀵</span><span class="tab active">택배</span></div>
+            <div class="shipment-grid">
+              <div class="shipment-card">
+                <div class="shipment-top"><strong>홍길동</strong><span class="tag available">입금완료</span></div>
+                <p>당일택배 / 서울 동작구 / 15:00 이전 출고</p>
+                <div class="action-row"><button class="ghost-button compact">송장 입력</button><button class="screen-button compact">발송 완료</button></div>
+              </div>
+              <div class="shipment-card">
+                <div class="shipment-top"><strong>김철수</strong><span class="tag available">입금완료</span></div>
+                <p>고속택배 / 부산역 / 기사 전달 메모 있음</p>
+                <div class="action-row"><button class="ghost-button compact">메모 확인</button><button class="screen-button compact">인계 완료</button></div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <footer class="footer-note">
+        <p>프로토타입 경로: <code>prototype/index.html</code></p>
+        <p>이 시안을 기준으로 다음에는 React 실제 화면이나 API 연결형 데모로 바로 이어갈 수 있습니다.</p>
+      </footer>
+    </div>
+    <script src="./app.js"></script>
+  </body>
+</html>

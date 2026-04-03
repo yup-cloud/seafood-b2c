@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR="$HOME/seafood-b2c"
+BRANCH="${BRANCH:-main}"
+SERVICE_NAME="${SERVICE_NAME:-seafood-b2c}"
+
+cd "$APP_DIR"
+
+git fetch origin
+git checkout "$BRANCH"
+git pull origin "$BRANCH"
+
+npm install
+npm run build
+
+if [ -f ".env.production" ]; then
+  cp .env.production .env
+fi
+
+if [ -f "db/migrations/001_initial_schema.sql" ] && [ -n "${DATABASE_URL:-}" ]; then
+  psql "$DATABASE_URL" -f db/migrations/001_initial_schema.sql || true
+fi
+
+sudo systemctl restart "$SERVICE_NAME"
+sudo systemctl status "$SERVICE_NAME" --no-pager

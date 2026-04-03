@@ -1,0 +1,41 @@
+{
+  "name": "seafood-retail-saas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend scaffold for a seafood retail ordering and operations SaaS.",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "dev:api": "tsx watch src/server.ts",
+    "dev:web": "vite --config web/vite.config.ts",
+    "build": "npm run build:api && npm run build:web",
+    "build:api": "tsc -p tsconfig.json",
+    "build:web": "vite build --config web/vite.config.ts",
+    "start": "node dist/server.js",
+    "check": "npm run check:api && npm run check:web",
+    "check:api": "tsc --noEmit -p tsconfig.json",
+    "check:web": "tsc --noEmit -p web/tsconfig.json",
+    "preview:web": "vite preview --config web/vite.config.ts"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "pg": "^8.13.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.5"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "@vitejs/plugin-react": "^5.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^7.1.7"
+  }
+}
