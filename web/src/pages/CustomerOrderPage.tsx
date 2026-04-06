@@ -203,7 +203,7 @@ export function CustomerOrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [recentDraft, setRecentDraft] = useState<RecentOrderDraft | null>(() => loadRecentOrderDraft());
-  const [isBoardOpen, setIsBoardOpen] = useState(true);
+  const [isBoardOpen, setIsBoardOpen] = useState(false);
   const matchedBoardItems = items
     .map((item) => ({
       item,
@@ -584,10 +584,9 @@ export function CustomerOrderPage() {
       <section className="page-hero compact">
         <div>
           <p className="eyebrow-text">주문하기</p>
-          <h1 className="page-title">여러 품목도 한 번에 정리해서 주문하실 수 있어요</h1>
+          <h1 className="page-title">오늘 시세에서 바로 고르고 주문하세요</h1>
           <p className="page-description">
-            품목을 하나씩 더 담고, 받는 방법에 맞는 손질과 포장 추천까지 함께 보면서 주문하실 수
-            있어요.
+            먼저 품목과 받는 방법을 고르고, 마지막에 연락처와 주소만 남기면 됩니다.
           </p>
         </div>
         <div className="hero-pills">
@@ -596,7 +595,7 @@ export function CustomerOrderPage() {
       </section>
 
       <div className="split-layout wide-main">
-        <SectionCard title="오늘 준비 가능한 품목" subtitle="원하실 때만 펼쳐서 확인하실 수 있어요.">
+        <SectionCard title="오늘 준비 품목" subtitle="필요할 때만 펼쳐서 보고 바로 고르실 수 있어요.">
           <div className="summary-bar">
             <div>
               <strong>오늘 시세 {board.items.length}개 품목</strong>
@@ -652,8 +651,8 @@ export function CustomerOrderPage() {
             <div className="starter-preset-panel">
               <div className="starter-preset-head">
                 <div>
-                  <strong>자주 고르는 주문 방식</strong>
-                  <p>가장 많이 쓰는 조합만 먼저 골라 시작하시면 돼요.</p>
+                  <strong>빠르게 시작하기</strong>
+                  <p>자주 쓰는 방식만 먼저 고르면 아래가 자동으로 맞춰져요.</p>
                 </div>
                 <span className="mini-pill">확인 연락 보통 10~20분 내</span>
               </div>
@@ -679,36 +678,19 @@ export function CustomerOrderPage() {
 
           {recentDraft ? (
             <div className="banner-notice">
-              지난 주문 정보를 저장해두었어요. 같은 방식으로 다시 주문하시려면
-              {" "}
+              지난 주문 그대로 다시 하시려면{" "}
               <button type="button" className="inline-text-button" onClick={restoreRecentDraft}>
-                지난 주문 불러오기
+                불러오기
               </button>
-              를 눌러주세요.
+              를 누르세요.
             </div>
           ) : null}
 
           <form className="order-form" onSubmit={handleSubmit}>
-            <div className="form-grid two">
-              <label className="field-block">
-                <span>주문하시는 분</span>
-                <input value={form.customer_name} onChange={(event) => updateField("customer_name", event.target.value)} required />
-              </label>
-              <label className="field-block">
-                <span>연락받을 번호</span>
-                <input value={form.customer_phone} onChange={(event) => updateField("customer_phone", event.target.value)} placeholder="확인 연락을 드릴 번호" required />
-              </label>
-            </div>
-
-            <label className="field-block">
-              <span>입금 예정자명</span>
-              <input value={form.depositor_name} onChange={(event) => updateField("depositor_name", event.target.value)} placeholder="주문자명과 다르면 적어주세요" />
-            </label>
-
             <div className="choice-section">
               <div className="choice-section-head">
-                <strong>이번 주문은 어떤 방식으로 진행할까요?</strong>
-                <p>오늘 바로 받는 주문인지, 내일 이후를 위한 예약 주문인지 먼저 골라주세요.</p>
+                <strong>1. 주문 방식</strong>
+                <p>오늘 바로 받을지, 예약으로 진행할지 먼저 골라주세요.</p>
               </div>
               <div className="choice-grid two">
                 <button
@@ -717,8 +699,8 @@ export function CustomerOrderPage() {
                   onClick={() => updateField("order_flow", "same_day")}
                   aria-pressed={form.order_flow === "same_day"}
                 >
-                  <strong>오늘 바로 진행할 주문</strong>
-                  <span>당일 시세와 손질 조건을 확인해 최종 금액 안내 후 바로 준비해드려요.</span>
+                  <strong>오늘 주문</strong>
+                  <span>당일 시세 확인 후 바로 준비</span>
                 </button>
                 <button
                   type="button"
@@ -726,26 +708,15 @@ export function CustomerOrderPage() {
                   onClick={() => updateField("order_flow", "reservation")}
                   aria-pressed={form.order_flow === "reservation"}
                 >
-                  <strong>내일 이후 예약 주문</strong>
-                  <span>물건 확보가 필요한 주문은 예약금 안내 후 진행하고, 준비 완료 후 잔금을 안내드려요.</span>
+                  <strong>예약 주문</strong>
+                  <span>물건 확보 후 예약금 안내</span>
                 </button>
               </div>
             </div>
 
-            <div className="form-grid three">
+            <div className="form-grid two">
               <label className="field-block">
-                <span>이번 주문 방식</span>
-                <select value={form.purchase_unit} onChange={(event) => updateField("purchase_unit", event.target.value)}>
-                  {options.purchase_units.map((unit) => (
-                    <option key={unit} value={unit}>
-                      {unit === "whole" ? "한 마리 전체" : "반마리 같이 주문"}
-                    </option>
-                  ))}
-                </select>
-                <p className="field-hint">여러 품목을 담아도 이번 주문 전체에 공통 적용돼요.</p>
-              </label>
-              <label className="field-block">
-                <span>받는 방법</span>
+                <span>2. 받는 방법</span>
                 <select value={form.fulfillment_type} onChange={(event) => updateField("fulfillment_type", event.target.value)}>
                   {options.fulfillment_types.map((type) => (
                     <option key={type} value={type}>
@@ -755,11 +726,23 @@ export function CustomerOrderPage() {
                 </select>
               </label>
               <label className="field-block">
+                <span>반마리 여부</span>
+                <select value={form.purchase_unit} onChange={(event) => updateField("purchase_unit", event.target.value)}>
+                  {options.purchase_units.map((unit) => (
+                    <option key={unit} value={unit}>
+                      {unit === "whole" ? "한 마리 전체" : "반마리 같이 주문"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {form.fulfillment_type === "parcel" ? (
+              <label className="field-block">
                 <span>택배 종류</span>
                 <select
                   value={form.fulfillment_subtype}
                   onChange={(event) => updateField("fulfillment_subtype", event.target.value)}
-                  disabled={form.fulfillment_type !== "parcel"}
                 >
                   <option value="">선택 안 함</option>
                   {options.parcel_subtypes.map((subtype) => (
@@ -769,45 +752,18 @@ export function CustomerOrderPage() {
                   ))}
                 </select>
               </label>
-            </div>
+            ) : null}
 
             <div className={`support-card${fulfillmentGuidance.tone === "good" ? " highlight" : ""}`}>
               <strong>{fulfillmentGuidance.title}</strong>
               <p>{fulfillmentGuidance.description}</p>
             </div>
 
-            <div className="support-grid">
-              <div className="support-card">
-                <strong>주문 전에 가장 많이 물어보시는 내용</strong>
-                <ul className="support-list">
-                  <li>처음 주문이면 `필렛 + 픽업` 또는 `필렛 + 퀵` 조합이 가장 무난해요.</li>
-                  <li>택배 수령은 회 손질보다 필렛이나 통손질이 더 안정적이에요.</li>
-                  <li>반마리 함께 주문은 매칭과 실제 사이즈 확인 후 최종 금액을 다시 안내드려요.</li>
-                </ul>
-              </div>
-              <div className="support-card highlight">
-                <strong>주문 후에는 이렇게 진행돼요</strong>
-                <ul className="support-list">
-                  <li>주문서 접수 후 시세와 품목 상태를 확인해드려요.</li>
-                  <li>최종 금액 또는 예약금 금액을 먼저 안내드려요.</li>
-                  <li>입금 확인 후 손질과 포장을 시작하고, 출고 상태도 링크로 확인하실 수 있어요.</li>
-                </ul>
-              </div>
-              <div className="support-card">
-                <strong>주문 수정 가능 시간</strong>
-                <ul className="support-list">
-                  <li>금액 확정 전까지는 주소, 시간대, 포장 옵션은 비교적 편하게 수정 요청하실 수 있어요.</li>
-                  <li>손질이 시작된 뒤에는 수령 시간이나 주소 변경이 제한될 수 있어요.</li>
-                  <li>수정이 필요하면 주문 조회 화면이나 매장 연락처로 바로 알려주시면 돼요.</li>
-                </ul>
-              </div>
-            </div>
-
             <div className="order-items-section">
               <div className="order-items-head">
                 <div>
-                  <strong>주문 품목</strong>
-                  <p>품목별로 손질과 포장 추천이 달라지므로, 필요한 만큼 차례대로 담아보세요.</p>
+                  <strong>3. 품목 고르기</strong>
+                  <p>필요한 만큼 담고 손질만 정하시면 돼요.</p>
                 </div>
                 <button type="button" className="secondary-button compact-button" onClick={addItem}>
                   품목 추가
@@ -843,6 +799,13 @@ export function CustomerOrderPage() {
                     />
                   );
                 })}
+              </div>
+            </div>
+
+            <div className="choice-section">
+              <div className="choice-section-head">
+                <strong>4. 받는 시간과 주소</strong>
+                <p>배송이나 픽업에 필요한 정보만 적어주세요.</p>
               </div>
             </div>
 
@@ -889,11 +852,34 @@ export function CustomerOrderPage() {
               <textarea value={form.customer_request} onChange={(event) => updateField("customer_request", event.target.value)} placeholder="예: 뼈와 머리도 같이 부탁드려요. 문 앞 수령 원해요." />
             </label>
 
+            <div className="choice-section">
+              <div className="choice-section-head">
+                <strong>5. 연락처 남기기</strong>
+                <p>최종 금액과 준비 안내를 드릴 정보를 입력해주세요.</p>
+              </div>
+            </div>
+
+            <div className="form-grid two">
+              <label className="field-block">
+                <span>주문하시는 분</span>
+                <input value={form.customer_name} onChange={(event) => updateField("customer_name", event.target.value)} required />
+              </label>
+              <label className="field-block">
+                <span>연락받을 번호</span>
+                <input value={form.customer_phone} onChange={(event) => updateField("customer_phone", event.target.value)} placeholder="확인 연락을 드릴 번호" required />
+              </label>
+            </div>
+
+            <label className="field-block">
+              <span>입금 예정자명</span>
+              <input value={form.depositor_name} onChange={(event) => updateField("depositor_name", event.target.value)} placeholder="주문자명과 다르면 적어주세요" />
+            </label>
+
             <div className="estimate-panel">
               <div className="estimate-panel-head">
                 <div>
-                  <strong>마지막으로 예상 금액 범위를 안내드릴게요</strong>
-                  <p>품목, 손질, 수령 방식이 정해진 뒤의 기준이라 실제 주문 감각에 더 가깝게 보실 수 있어요.</p>
+                  <strong>마지막으로 예상 금액을 확인해주세요</strong>
+                  <p>품목과 손질, 수령 방법 기준으로 대략 이 정도를 예상하시면 돼요.</p>
                 </div>
                 <span className="mini-pill">
                   {form.order_flow === "reservation" ? "예약금 진행형" : "최종 금액 확정형"}
@@ -955,8 +941,8 @@ export function CustomerOrderPage() {
             </div>
 
             <div className="warning-stack">
-              <p>당일 경락 상황에 따라 품목과 크기는 먼저 확인 후 최종 확정될 수 있어요.</p>
-              <p>여러 품목을 담으셔도 한 주문으로 묶여 안내되며, 품목별 손질과 포장 요청은 각각 반영돼요.</p>
+              <p>당일 경락 상황에 따라 품목과 크기는 확인 후 최종 확정될 수 있어요.</p>
+              <p>금액 확정 전까지는 주소, 시간, 포장 옵션 수정 요청이 가능해요.</p>
               {options.warnings.map((warning) => (
                 <p key={warning}>{warning}</p>
               ))}

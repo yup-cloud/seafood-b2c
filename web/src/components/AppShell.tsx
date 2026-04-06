@@ -1,5 +1,5 @@
 import { FormEvent, PropsWithChildren, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { grantAdminAccess } from "../lib/admin-access";
 
 const navigationItems = [
@@ -10,6 +10,7 @@ const navigationItems = [
 
 export function AppShell({ children }: PropsWithChildren) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isAccessOpen, setIsAccessOpen] = useState(false);
   const [accessToken, setAccessToken] = useState("");
   const [accessError, setAccessError] = useState("");
@@ -29,7 +30,7 @@ export function AppShell({ children }: PropsWithChildren) {
     event.preventDefault();
 
     if (!grantAdminAccess(accessToken)) {
-      setAccessError("운영 토큰이 일치하지 않습니다. 전달받은 토큰을 다시 확인해주세요.");
+      setAccessError("운영 PIN이 맞지 않습니다. 다시 확인해주세요.");
       return;
     }
 
@@ -47,19 +48,31 @@ export function AppShell({ children }: PropsWithChildren) {
             <p className="brand-subtitle">당일 시세로 주문하는 믿을 수 있는 수산 서비스</p>
           </div>
         </div>
-        <nav className="topnav">
-          {navigationItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => `topnav-link${isActive ? " active" : ""}`}
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+        <div className="topbar-actions">
+          <nav className="topnav">
+            {navigationItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) => `topnav-link${isActive ? " active" : ""}`}
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+          {!location.pathname.startsWith("/admin") ? (
+            <button type="button" className="topbar-admin-button" onClick={openAccessModal}>
+              운영자
+            </button>
+          ) : null}
+        </div>
       </header>
       <main className="page-frame">{children}</main>
+      {!location.pathname.startsWith("/admin") ? (
+        <button type="button" className="floating-admin-button" onClick={openAccessModal}>
+          운영자
+        </button>
+      ) : null}
       <nav className="mobile-tabbar" aria-label="모바일 주요 메뉴">
         {navigationItems.map((item) => (
           <NavLink
@@ -70,6 +83,11 @@ export function AppShell({ children }: PropsWithChildren) {
             {item.label}
           </NavLink>
         ))}
+        {!location.pathname.startsWith("/admin") ? (
+          <button type="button" className="mobile-tabbar-link mobile-tabbar-button" onClick={openAccessModal}>
+            운영
+          </button>
+        ) : null}
       </nav>
       <footer className="app-footer">
         <div className="app-footer-inner">
@@ -89,9 +107,7 @@ export function AppShell({ children }: PropsWithChildren) {
           >
             <p className="eyebrow-text">운영자 전용</p>
             <h2 className="access-title">운영 화면 입장</h2>
-            <p className="access-body">
-              전달받은 운영 토큰을 입력하시면 숨겨진 관리자 화면으로 이동합니다.
-            </p>
+            <p className="access-body">운영 PIN만 입력하시면 바로 관리자 화면으로 이동합니다.</p>
             <form className="stack-form" onSubmit={handleAccessSubmit}>
               <label className="field-block">
                 <span>운영 PIN</span>
