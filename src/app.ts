@@ -16,7 +16,15 @@ export function createApp() {
   const webIndexPath = path.join(webDistDir, "index.html");
   const hasBuiltWebApp = existsSync(webIndexPath);
 
-  app.use(helmet());
+  // IP 기반 HTTP 데모 환경에서는 helmet 기본 CSP/COOP 헤더가
+  // 자산 요청을 HTTPS로 올리거나 브라우저 경고를 유발할 수 있다.
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginOpenerPolicy: false,
+      originAgentCluster: false
+    })
+  );
   app.use(cors());
   app.use(express.json());
 
