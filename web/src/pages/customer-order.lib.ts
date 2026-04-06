@@ -44,8 +44,8 @@ export const packagingOptions = [
   },
   {
     value: "gift_box",
-    label: "선물용 정갈 포장",
-    description: "선물하거나 대접용으로 준비하실 때 보기 좋게 정리해드려요."
+    label: "정갈 포장",
+    description: "바로 드실 때 깔끔하게 정리된 형태로 받아보실 수 있어요."
   },
   {
     value: "travel_safe",
@@ -83,30 +83,30 @@ export const vacuumOptions = [
 export const orderStarterPresets: OrderStarterPreset[] = [
   {
     id: "beginner-home",
-    title: "처음 주문 추천",
-    description: "가장 무난한 시작 조합",
+    title: "처음 주문",
+    description: "무난하게 시작",
     orderFlow: "same_day",
     fulfillmentType: "pickup",
     cutType: "fillet",
-    badge: "초보 추천"
+    badge: "처음"
   },
   {
     id: "same-day-eat",
-    title: "오늘 바로 드실 분",
-    description: "당일 식사에 잘 맞는 조합",
+    title: "오늘 바로",
+    description: "당일 식사 추천",
     orderFlow: "same_day",
     fulfillmentType: "quick",
     cutType: "sashimi",
-    badge: "당일 수령"
+    badge: "당일"
   },
   {
     id: "travel-safe",
-    title: "택배·이동 거리",
-    description: "택배와 장거리 이동 추천",
+    title: "택배·이동",
+    description: "멀리 갈 때 추천",
     orderFlow: "reservation",
     fulfillmentType: "parcel",
     cutType: "fillet",
-    badge: "안전 포장"
+    badge: "택배"
   }
 ];
 

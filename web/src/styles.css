@@ -1813,6 +1813,81 @@ textarea:disabled {
   background: linear-gradient(180deg, rgba(237, 245, 255, 0.92), rgba(255, 255, 255, 0.98));
 }
 
+.section-card,
+.item-card,
+.board-item-card,
+.choice-card,
+.cut-guide-card,
+.recommendation-card,
+.summary-tile,
+.estimate-total-card,
+.notice-panel,
+.warning-stack,
+.cutoff-card,
+.auto-price-panel,
+.support-card,
+.field-block,
+.choice-section-head,
+.recommendation-copy,
+.recommendation-summary,
+.order-items-head,
+.item-card-head,
+.starter-preset-head {
+  min-width: 0;
+}
+
+.board-item-card,
+.choice-card,
+.cut-guide-card,
+.recommendation-card,
+.summary-tile,
+.estimate-total-card,
+.notice-panel,
+.warning-stack,
+.cutoff-card,
+.auto-price-panel,
+.support-card {
+  overflow: hidden;
+}
+
+.board-item-card strong,
+.board-item-card p,
+.board-item-card span,
+.choice-card strong,
+.choice-card span,
+.cut-guide-card strong,
+.cut-guide-card p,
+.recommendation-card strong,
+.recommendation-card p,
+.summary-tile strong,
+.summary-tile span,
+.estimate-total-card strong,
+.estimate-total-card p,
+.notice-panel p,
+.warning-stack p,
+.cutoff-card strong,
+.support-card strong,
+.support-card p {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.choice-card strong,
+.board-item-card strong,
+.cut-guide-card strong,
+.recommendation-card strong {
+  line-height: 1.38;
+}
+
+.choice-card span,
+.board-item-card p,
+.board-item-card span,
+.support-card p,
+.cut-guide-card p,
+.recommendation-card p {
+  line-height: 1.48;
+}
+
 .support-list {
   margin: 0;
   padding-left: 18px;
@@ -1922,7 +1997,6 @@ textarea:disabled {
   .service-step-grid,
   .cutoff-grid,
   .support-grid,
-  .choice-grid.two,
   .choice-grid.three,
   .form-grid.two,
   .form-grid.three,
@@ -1946,6 +2020,14 @@ textarea:disabled {
 
   .page-hero {
     flex-direction: column;
+  }
+
+  .choice-grid.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .starter-choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .order-items-head,
@@ -2077,6 +2159,86 @@ textarea:disabled {
     font-size: clamp(1.7rem, 7vw, 2.1rem);
   }
 
+  .section-card,
+  .item-card,
+  .support-card,
+  .auto-price-panel,
+  .recommendation-card,
+  .cut-guide-card,
+  .starter-preset-panel {
+    border-radius: 20px;
+  }
+
+  .item-card,
+  .support-card,
+  .cut-guide-card,
+  .recommendation-card,
+  .auto-price-panel,
+  .estimate-total-card,
+  .summary-tile,
+  .notice-panel,
+  .warning-stack {
+    padding: 14px 15px;
+  }
+
+  .starter-preset-panel {
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .starter-choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .starter-choice-grid .choice-card {
+    gap: 6px;
+    min-height: 104px;
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .starter-choice-grid .choice-card strong {
+    font-size: 0.92rem;
+    line-height: 1.28;
+  }
+
+  .starter-choice-grid .choice-card span {
+    font-size: 0.76rem;
+    line-height: 1.32;
+  }
+
+  .choice-card-meta {
+    max-width: 100%;
+  }
+
+  .choice-section-head p,
+  .field-hint,
+  .recommendation-summary span,
+  .auto-price-head p,
+  .estimate-total-card p,
+  .support-list,
+  .notice-panel p,
+  .warning-stack p {
+    font-size: 0.83rem;
+    line-height: 1.42;
+  }
+
+  .board-item-card {
+    gap: 8px;
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .board-item-card strong {
+    font-size: 0.95rem;
+  }
+
+  .board-item-card p,
+  .board-item-card span {
+    font-size: 0.8rem;
+  }
+
   .list-row,
   .row-end,
   .summary-bar {
@@ -2102,6 +2264,7 @@ textarea:disabled {
 
   .board-item-picker {
     grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
   }
 
   .board-item-card-head,
@@ -2118,6 +2281,18 @@ textarea:disabled {
   .brand-subtitle {
     word-break: keep-all;
     overflow-wrap: anywhere;
+  }
+
+  .choice-grid.two:not(.starter-choice-grid),
+  .choice-grid.three {
+    grid-template-columns: 1fr;
+  }
+
+  .order-items-head p,
+  .starter-preset-head p,
+  .summary-bar span {
+    font-size: 0.84rem;
+    line-height: 1.42;
   }
 }
 

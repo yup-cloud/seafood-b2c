@@ -144,7 +144,7 @@ export function CustomerOrderItemCard({
         <div className="auto-price-panel">
           <div className="auto-price-head">
             <div>
-              <strong>오늘 시세가 자동으로 반영되고 있어요</strong>
+              <strong>오늘 시세가 자동 반영돼요</strong>
               <p>
                 {matchedBoardItem.origin_label ?? "원산지 확인 후 안내"} · {matchedBoardItem.size_band ?? "중량 확인 후 안내"}
               </p>
@@ -205,7 +205,7 @@ export function CustomerOrderItemCard({
       <div className="choice-section">
         <div className="choice-section-head">
           <strong>포장 형태</strong>
-          <p>이 품목의 손질 방식과 수령 방법에 맞춰 추천이 바뀌고, 원하시면 직접 다시 고르실 수 있어요.</p>
+          <p>손질과 받는 방법에 맞춰 추천이 바뀌고, 원하시면 직접 고르실 수 있어요.</p>
         </div>
         <div className="choice-grid three">
           {packagingOptions.map((option) => (
@@ -226,7 +226,7 @@ export function CustomerOrderItemCard({
       <div className={`recommendation-card${isRecommendationApplied ? " matched" : ""}`}>
         <div className="recommendation-copy">
           <p className="recommendation-label">
-            {isRecommendationApplied ? "추천 조합이 적용되어 있어요" : "현재 손질과 수령 방식 기준 추천 조합"}
+            {isRecommendationApplied ? "추천 조합 적용 중" : "현재 추천 조합"}
           </p>
           <strong>{recommendation.title}</strong>
           <p>{recommendation.description}</p>
@@ -251,7 +251,7 @@ export function CustomerOrderItemCard({
       <div className="choice-section">
         <div className="choice-section-head">
           <strong>숙성지 선택</strong>
-          <p>어종과 취향에 따라 이 품목의 숙성지 종류를 다르게 준비할 수 있어요.</p>
+          <p>원하시는 느낌에 따라 일반 또는 고급 숙성지로 준비해드려요.</p>
         </div>
         <div className="choice-grid three">
           {agingSheetOptions.map((option) => (
@@ -272,7 +272,7 @@ export function CustomerOrderItemCard({
       <div className="choice-section">
         <div className="choice-section-head">
           <strong>진공포장 여부</strong>
-          <p>진공포장은 이 품목이 필렛 손질일 때만 가능해요.</p>
+          <p>진공포장은 필렛 손질일 때만 가능해요.</p>
         </div>
         <div className="choice-grid two">
           {vacuumOptions.map((option) => {
