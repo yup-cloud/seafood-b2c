@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { grantAdminAccess } from "../lib/admin-access";
 
 const navigationItems = [
-  { to: "/", label: "오늘 시세" },
+  { to: "/", label: "홈" },
   { to: "/customer/half-order", label: "반마리 주문" },
   { to: "/customer/order", label: "주문하기" },
   { to: "/customer/status", label: "주문 확인" }
@@ -63,7 +63,7 @@ export function AppShell({ children }: PropsWithChildren) {
       </header>
       <main className="page-frame">{children}</main>
       <nav className="mobile-tabbar" aria-label="모바일 주요 메뉴">
-        {navigationItems.map((item) => (
+        {navigationItems.slice(0, 3).map((item) => (
           <NavLink
             key={`mobile-${item.to}`}
             to={item.to}
@@ -78,7 +78,7 @@ export function AppShell({ children }: PropsWithChildren) {
           <p className="footer-copy">오늘 시세 확인부터 주문, 진행 조회까지 한 번에 이용하실 수 있어요.</p>
           {!location.pathname.startsWith("/admin") ? (
             <button type="button" className="footer-admin-button prominent" onClick={openAccessModal}>
-              운영자 화면 열기
+              운영자
             </button>
           ) : null}
         </div>

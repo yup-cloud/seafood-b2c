@@ -2515,3 +2515,56 @@ textarea:disabled {
     scroll-behavior: auto !important;
   }
 }
+.home-cta-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+}
+
+.home-cta-row .primary-button,
+.home-cta-row .secondary-button {
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.mobile-tabbar {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .home-cta-row .primary-button,
+  .home-cta-row .secondary-button {
+    padding-inline: 12px;
+    font-size: 0.92rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .home-cta-row .primary-button,
+  .home-cta-row .secondary-button {
+    min-height: 48px;
+    font-size: 0.86rem;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-description,
+  .cutoff-card strong,
+  .trust-strip p,
+  .list-row p,
+  .support-card p {
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+}
+
+@media (max-width: 420px) {
+  .home-cta-row .primary-button,
+  .home-cta-row .secondary-button {
+    font-size: 0.78rem;
+    padding-inline: 8px;
+  }
+}

@@ -50,17 +50,21 @@ export function HomePage() {
       <section className="hero-card">
         <div className="hero-card-copy">
           <p className="eyebrow-text">오늘바다</p>
-          <h1 className="hero-title">좋은 생선을 고르는 일, 주문까지 편안해야 하니까</h1>
+          <h1 className="hero-title">
+            좋은 생선을 고르는 일,
+            <br />
+            주문까지 편안해야 하니까
+          </h1>
           <p className="hero-description">
             당일 시세는 먼저 투명하게 보여드리고, 손질과 픽업, 퀵, 택배까지 요청하신 방식에
             맞춰 정성껏 준비해드립니다.
           </p>
-          <div className="inline-actions">
+          <div className="inline-actions home-cta-row">
             <Link to="/customer/order" className="primary-button">
-              오늘 시세 보고 주문하기
+              오늘 시세보고 주문
             </Link>
             <Link to="/customer/status" className="secondary-button">
-              내 주문 진행 확인하기
+              내 주문 확인
             </Link>
           </div>
         </div>
@@ -77,27 +81,9 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="consumer-info-grid">
-        <article className="consumer-info-card">
-          <p className="consumer-info-label">오늘 시세 기준</p>
-          <strong className="consumer-info-title">{formatDate(board.board_date)}</strong>
-          <p className="consumer-info-copy">매일 바뀌는 시세를 먼저 보여드리고, 확인 후 정확한 금액을 안내해드려요.</p>
-        </article>
-        <article className="consumer-info-card">
-          <p className="consumer-info-label">받는 방법</p>
-          <strong className="consumer-info-title">픽업 · 퀵 · 택배</strong>
-          <p className="consumer-info-copy">원하시는 방식에 맞춰 가장 신선한 상태로 받으실 수 있게 준비해드려요.</p>
-        </article>
-        <article className="consumer-info-card">
-          <p className="consumer-info-label">반마리 주문</p>
-          <strong className="consumer-info-title">같이 맞춰드릴 수 있어요</strong>
-          <p className="consumer-info-copy">한 마리가 부담스러우시면 반마리 함께 주문도 확인 후 도와드려요.</p>
-        </article>
-      </section>
-
       <SectionCard
-        title="오늘 주문 마감과 결제 방식"
-        subtitle="지금 바로 가능한 주문과 예약으로 진행되는 주문을 먼저 쉽게 구분해보세요."
+        title="오늘 주문 안내"
+        subtitle={`${formatDate(board.board_date)} 기준으로 바로 가능한 주문만 먼저 모아봤어요.`}
       >
         <div className="cutoff-grid">
           {cutoffWindows.map((cutoff) => (
@@ -147,54 +133,31 @@ export function HomePage() {
         </SectionCard>
 
         <SectionCard
-          title="주문 전 꼭 확인하면 좋은 안내"
-          subtitle="고객 입장에서 실제로 가장 많이 궁금해하시는 부분만 골라 정리했어요."
+          title="처음 주문이라면 이것만 보세요"
+          subtitle="복잡한 설명은 줄이고, 실제로 많이 물어보시는 내용만 남겼어요."
         >
           <div className="stack-list">
             <div className="list-row">
               <div>
-                <strong>시세부터 먼저 숨기지 않습니다</strong>
-                <p>당일 기준 가격을 먼저 보여드리고, 손질비와 운임비는 확인 후 정확히 안내해드려요.</p>
+                <strong>시세를 먼저 보고 주문해요</strong>
+                <p>오늘 기준 단가를 먼저 보고, 손질비와 운임은 주문 내용에 맞춰 따로 안내해드려요.</p>
               </div>
             </div>
             <div className="list-row">
               <div>
-                <strong>주문 후 진행 상황을 바로 확인할 수 있어요</strong>
-                <p>금액 안내, 입금 확인, 손질 준비, 출고 상태까지 주문 후 직접 확인하실 수 있어요.</p>
+                <strong>주문번호로 진행 상황을 확인해요</strong>
+                <p>금액 안내부터 손질 준비, 출고 완료까지 주문 후에도 직접 확인하실 수 있어요.</p>
               </div>
             </div>
             <div className="list-row">
               <div>
-                <strong>받는 방식도 원하는 대로 고르세요</strong>
-                <p>매장 픽업, 퀵, 일반택배와 당일택배까지 상황에 맞춰 가장 편한 방식으로 준비해드려요.</p>
+                <strong>픽업, 퀵, 택배 중에 고르세요</strong>
+                <p>오늘 드실지, 이동이 있는지에 따라 가장 무난한 수령 방식을 추천해드려요.</p>
               </div>
             </div>
           </div>
         </SectionCard>
       </div>
-
-      <SectionCard
-        title="주문은 이렇게 진행돼요"
-        subtitle="복잡한 설명 없이, 고객 입장에서 꼭 필요한 흐름만 간단하게 보여드릴게요."
-      >
-        <div className="service-step-grid">
-          <article className="service-step-card">
-            <span className="service-step-no">1</span>
-            <strong>원하시는 품목과 받는 방법을 남겨주세요</strong>
-            <p>픽업, 퀵, 택배 중 편한 방법을 고르고 요청사항까지 함께 남기실 수 있어요.</p>
-          </article>
-          <article className="service-step-card">
-            <span className="service-step-no">2</span>
-            <strong>확인 후 정확한 금액을 안내해드려요</strong>
-            <p>당일 시세와 손질, 운임 조건을 반영해 주문별 금액을 분명하게 말씀드려요.</p>
-          </article>
-          <article className="service-step-card">
-            <span className="service-step-no">3</span>
-            <strong>준비 상황과 전달 상태를 링크로 확인하세요</strong>
-            <p>입금 확인부터 손질 준비, 출고 완료까지 주문 후에도 불안하지 않게 보여드려요.</p>
-          </article>
-        </div>
-      </SectionCard>
 
       <SectionCard
         title="처음 주문하시는 분이 가장 많이 물어보세요"
