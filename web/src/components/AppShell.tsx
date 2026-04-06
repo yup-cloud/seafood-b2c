@@ -94,13 +94,14 @@ export function AppShell({ children }: PropsWithChildren) {
             </p>
             <form className="stack-form" onSubmit={handleAccessSubmit}>
               <label className="field-block">
-                <span>운영 토큰</span>
+                <span>운영 PIN</span>
                 <input
                   autoFocus
                   type="password"
+                  inputMode="numeric"
                   value={accessToken}
                   onChange={(event) => setAccessToken(event.target.value)}
-                  placeholder="운영 전용 토큰 입력"
+                  placeholder="운영자 PIN 또는 토큰 입력"
                 />
               </label>
               {accessError ? <p className="helper-text access-error">{accessError}</p> : null}

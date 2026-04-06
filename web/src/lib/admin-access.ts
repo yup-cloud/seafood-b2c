@@ -5,6 +5,10 @@ export function resolveAdminAccessToken() {
   return import.meta.env.VITE_ADMIN_ACCESS_TOKEN?.trim() || "oneulbada-ops-2026";
 }
 
+export function resolveAdminAccessPin() {
+  return import.meta.env.VITE_ADMIN_ACCESS_PIN?.trim() || "758400";
+}
+
 export function hasAdminAccess() {
   if (typeof window === "undefined") {
     return false;
@@ -19,7 +23,10 @@ export function grantAdminAccess(token: string) {
   }
 
   const normalizedToken = token.trim();
-  if (!normalizedToken || normalizedToken !== resolveAdminAccessToken()) {
+  if (
+    !normalizedToken ||
+    (normalizedToken !== resolveAdminAccessToken() && normalizedToken !== resolveAdminAccessPin())
+  ) {
     return false;
   }
 

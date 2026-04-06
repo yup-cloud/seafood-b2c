@@ -1399,6 +1399,10 @@ textarea:disabled {
   white-space: pre-wrap;
 }
 
+.kakao-notice-preview.tall {
+  min-height: 340px;
+}
+
 .data-table {
   width: 100%;
   border-collapse: separate;
@@ -1478,6 +1482,38 @@ textarea:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.summary-bar.wrap {
+  flex-wrap: wrap;
+}
+
+.button-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.import-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.import-preview-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 20px;
+  background: rgba(248, 250, 252, 0.92);
+}
+
+.import-preview-item p,
+.import-preview-item small {
+  margin: 0;
 }
 
 .banner-notice {

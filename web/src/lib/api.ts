@@ -55,6 +55,55 @@ export const api = {
   getPublicOrder: (publicToken: string) => request<PublicOrderStatus>(`/public/orders/${publicToken}`),
   getAdminOrders: (search?: string) =>
     request<AdminOrdersResponse>(`/admin/orders${search ? `?search=${encodeURIComponent(search)}` : ""}`),
+  getAdminPriceBoard: (date?: string) =>
+    request<{ date: string | null; boards: Array<{ id: string; board_date: string; status: string }>; items: PriceBoardResponse["items"] }>(
+      `/admin/price-board${date ? `?date=${encodeURIComponent(date)}` : ""}`
+    ),
+  upsertAdminPriceBoard: (payload: { board_date: string; title?: string }) =>
+    request<{ batch: { id: string; board_date: string; status: string } }>("/admin/price-board", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+  createAdminPriceBoardItem: (payload: {
+    batch_id: string;
+    item_name: string;
+    origin_label?: string | null;
+    size_band?: string | null;
+    unit_price?: number | null;
+    unit_label?: string;
+    sale_status: string;
+    reservable_flag?: boolean;
+    reservation_cutoff_note?: string | null;
+    note?: string | null;
+    sort_order?: number;
+  }) =>
+    request<{ item: unknown }>("/admin/price-board/items", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+  patchAdminPriceBoardItem: (
+    itemId: string,
+    payload: {
+      item_name?: string;
+      origin_label?: string | null;
+      size_band?: string | null;
+      unit_price?: number | null;
+      unit_label?: string;
+      sale_status?: string;
+      reservable_flag?: boolean;
+      reservation_cutoff_note?: string | null;
+      note?: string | null;
+      sort_order?: number;
+    }
+  ) =>
+    request<{ item: unknown }>(`/admin/price-board/items/${itemId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload)
+    }),
+  publishAdminPriceBoard: (batchId: string) =>
+    request(`/admin/price-board/${batchId}/publish`, {
+      method: "POST"
+    }),
   getAdminOrder: (orderId: string) => request<AdminOrderDetail>(`/admin/orders/${orderId}`),
   submitQuote: (
     orderId: string,
