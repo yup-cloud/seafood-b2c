@@ -135,7 +135,10 @@ export function HomePage() {
                   </p>
                 </div>
                 <div className="row-end">
-                  <strong>{formatCurrency(item.unit_price)}</strong>
+                  <strong>
+                    {formatCurrency(item.unit_price)}
+                    {item.unit_label === "kg" ? " / kg" : ""}
+                  </strong>
                   <StatusBadge value={item.sale_status} />
                 </div>
               </div>
@@ -190,6 +193,26 @@ export function HomePage() {
             <strong>준비 상황과 전달 상태를 링크로 확인하세요</strong>
             <p>입금 확인부터 손질 준비, 출고 완료까지 주문 후에도 불안하지 않게 보여드려요.</p>
           </article>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="처음 주문하시는 분이 가장 많이 물어보세요"
+        subtitle="실제 문의가 많은 질문만 먼저 짧게 정리했어요."
+      >
+        <div className="support-grid">
+          <div className="support-card">
+            <strong>어떤 손질을 골라야 할지 모르겠어요</strong>
+            <p>처음 주문이면 필렛부터 시작하시면 가장 부담이 적고, 이동이나 보관도 편한 편이에요.</p>
+          </div>
+          <div className="support-card">
+            <strong>주문하면 언제 연락이 오나요?</strong>
+            <p>보통 주문서 확인 후 10~20분 안에 금액이나 진행 가능 여부를 먼저 안내드려요.</p>
+          </div>
+          <div className="support-card">
+            <strong>한 마리가 부담스러우면 어떻게 하나요?</strong>
+            <p>반마리 함께 주문으로 먼저 남겨주시면 가능한 품목은 확인 후 함께 맞춰드릴 수 있어요.</p>
+          </div>
         </div>
       </SectionCard>
     </div>

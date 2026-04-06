@@ -225,6 +225,46 @@ export function CustomerStatusPage() {
               </div>
             </div>
           </SectionCard>
+
+          <SectionCard title="자동 안내 예정 메시지" subtitle="실서비스에서는 아래 같은 안내가 순서대로 자동 발송되면 가장 체감이 커요.">
+            <div className="support-grid">
+              <div className="support-card">
+                <strong>금액 안내 완료</strong>
+                <p>
+                  {order.order_no} 주문의 최종 금액이 확정되었어요. 확인 후 입금해주시면 바로 준비를 시작할게요.
+                </p>
+              </div>
+              <div className="support-card">
+                <strong>입금 확인 완료</strong>
+                <p>
+                  입금 확인이 끝나 손질과 포장을 시작했어요. 준비가 끝나면 수령 방식에 맞춰 다시 안내드릴게요.
+                </p>
+              </div>
+              <div className="support-card highlight">
+                <strong>출고 완료</strong>
+                <p>
+                  선택하신 방식으로 전달이 시작되었어요. 바로 드시는 회는 수령 후 2시간 내 섭취를 가장 권장드려요.
+                </p>
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="수령 후 보관 · 섭취 가이드" subtitle="받는 방식과 손질 상태에 따라 가장 무난한 보관 방법만 짧게 안내드릴게요.">
+            <div className="support-grid">
+              <div className="support-card">
+                <strong>회 손질</strong>
+                <p>가급적 수령 후 2시간 내 드시는 것을 권장드리고, 잠시 보관 시에는 냉장 보관해주세요.</p>
+              </div>
+              <div className="support-card">
+                <strong>필렛 · 오로시</strong>
+                <p>냉장 보관 후 당일 또는 다음날 빠르게 드시는 편이 가장 좋고, 진공포장은 이동과 보관이 조금 더 편해요.</p>
+              </div>
+              <div className="support-card">
+                <strong>택배 수령</strong>
+                <p>도착 즉시 냉장 상태를 먼저 확인하고, 장시간 상온 보관은 피하시는 게 좋아요.</p>
+              </div>
+            </div>
+          </SectionCard>
         </>
       ) : null}
     </div>

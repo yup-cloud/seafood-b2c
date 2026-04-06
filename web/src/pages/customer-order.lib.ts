@@ -28,6 +28,14 @@ export interface OrderStarterPreset {
   badge: string;
 }
 
+export interface CutGuide {
+  cutType: string;
+  title: string;
+  description: string;
+  bestFor: string;
+  caution?: string;
+}
+
 export const packagingOptions = [
   {
     value: "ice_basic",
@@ -97,6 +105,15 @@ export const orderStarterPresets: OrderStarterPreset[] = [
     badge: "당일 수령"
   },
   {
+    id: "gift-ready",
+    title: "손님상·선물용 추천",
+    description: "보기 좋은 포장과 바로 드시기 좋은 손질 조합으로 먼저 맞춰드려요.",
+    orderFlow: "same_day",
+    fulfillmentType: "pickup",
+    cutType: "sashimi",
+    badge: "대접용"
+  },
+  {
     id: "travel-safe",
     title: "택배·이동 거리 고려 조합",
     description: "장거리 이동이나 택배 수령을 고려해 포장 안정성을 우선으로 맞춰드려요.",
@@ -104,6 +121,44 @@ export const orderStarterPresets: OrderStarterPreset[] = [
     fulfillmentType: "parcel",
     cutType: "fillet",
     badge: "안전 포장"
+  }
+];
+
+export const cutGuides: CutGuide[] = [
+  {
+    cutType: "raw",
+    title: "원물 그대로",
+    description: "손질 전 상태 그대로 받아 직접 손질하거나 업체 손질을 따로 맡기실 때 좋아요.",
+    bestFor: "직접 손질 예정 / 원물 상태 확인이 중요한 주문",
+    caution: "원물은 진공포장이 되지 않고, 바로 드시기엔 추가 손질이 필요해요."
+  },
+  {
+    cutType: "fillet",
+    title: "오로시 · 필렛",
+    description: "뼈와 내장을 정리해 가장 무난하게 받아보는 방식이라 처음 주문하시는 분께 추천드려요.",
+    bestFor: "초보 주문 / 택배 수령 / 집에서 편하게 손질 마무리",
+    caution: "회처럼 바로 드실 수 있는 상태는 아니고, 썰기만 조금 더 하시면 돼요."
+  },
+  {
+    cutType: "sashimi",
+    title: "회 손질",
+    description: "받자마자 바로 드실 수 있게 회 작업까지 마친 상태예요.",
+    bestFor: "당일 식사 / 픽업 또는 퀵 / 손님상 준비",
+    caution: "택배보다는 픽업이나 퀵이 훨씬 안정적이에요."
+  },
+  {
+    cutType: "masukawa",
+    title: "마스까와 · 껍질 작업",
+    description: "껍질 식감을 살리는 작업이 들어가서 감칠맛과 식감을 함께 원할 때 좋아요.",
+    bestFor: "도미류 / 껍질 식감 선호 / 대접용",
+    caution: "어종과 상태에 따라 별도 손질비가 추가될 수 있어요."
+  },
+  {
+    cutType: "sekkoshi",
+    title: "세꼬시",
+    description: "뼈째 얇게 썰어 식감을 살리는 방식이라 선호가 분명한 손질이에요.",
+    bestFor: "식감 위주 선호 / 빠른 당일 섭취",
+    caution: "택배보다 픽업이나 퀵에 더 잘 맞고, 처음 주문이면 필렛이나 회 손질이 더 무난해요."
   }
 ];
 

@@ -11,83 +11,235 @@ import {
 } from "../types";
 
 export const demoStore: StoreInfo = {
-  name: "오늘바다 데모점",
-  phones: ["010-1234-5678", "010-2345-6789"],
+  name: "참조은수산",
+  phones: ["010-3786-7555", "010-7584-0094"],
   bank_guide: {
     bank_name: "신한은행",
-    bank_account: "110-123-456789",
-    bank_holder: "오늘바다"
+    bank_account: "110-165-872666",
+    bank_holder: "김태이"
   },
   address: {
-    line1: "서울시 동작구 예시로 123 수산타운 1층",
-    line2: "A동 12호"
+    line1: "노량진수산시장 남5문 선어 80,81호",
+    line2: "방문 포장비 없음 · 진공포장 무료"
   },
-  business_hours_note: "월~금 05:00~17:00 / 토 05:00~18:00 / 일 06:00~17:00"
+  business_hours_note: "월~금 05:00~18:00 / 토 05:00~19:00 / 일 07:00~17:00"
 };
 
 export const demoPriceBoard: PriceBoardResponse = {
-  board_date: "2026-04-01",
+  board_date: "2026-04-06",
   items: [
     {
       id: "pb_1",
-      item_name: "광어",
+      item_name: "자연산 광어",
       origin_label: "국산",
-      size_band: "3kg급",
-      unit_price: "54000",
-      unit_label: "fish",
+      size_band: "3~5kg",
+      unit_price: "22000",
+      unit_label: "kg",
       sale_status: "available",
       reservable_flag: true,
-      reservation_cutoff_note: "오전 9:30 전 예약 권장"
+      reservation_cutoff_note: "반반 주문 가능 / 상태 최상급",
+      note: "SSSS · 정품 최상급 낚시바리"
     },
     {
       id: "pb_2",
-      item_name: "보리숭어",
+      item_name: "자연산 도다리",
       origin_label: "국산",
-      size_band: "1.2kg",
-      unit_price: "38000",
-      unit_label: "fish",
-      sale_status: "reserved_only",
+      size_band: "1~1.5kg",
+      unit_price: "20000",
+      unit_label: "kg",
+      sale_status: "available",
       reservable_flag: true,
-      reservation_cutoff_note: "반절 주문 가능"
+      reservation_cutoff_note: "전화·문자 문의 우선",
+      note: "S · 상태 좋음"
     },
     {
       id: "pb_3",
-      item_name: "시마아지",
+      item_name: "자연산 감성돔 (목포)",
+      origin_label: "국산",
+      size_band: "1.3~1.5kg",
+      unit_price: "20000",
+      unit_label: "kg",
+      sale_status: "available",
+      reservable_flag: true,
+      reservation_cutoff_note: "전화·문자 문의 우선",
+      note: "SS · 상태 최강"
+    },
+    {
+      id: "pb_4",
+      item_name: "광어 (제주 · 2.8~3.2kg)",
+      origin_label: "국산",
+      size_band: "2.8~3.2kg",
+      unit_price: "30000",
+      unit_label: "kg",
+      sale_status: "available",
+      reservable_flag: true,
+      reservation_cutoff_note: "당일 문의 가능",
+      note: "SS · 정품 상태 최강"
+    },
+    {
+      id: "pb_5",
+      item_name: "광어 (제주 · 2~2.5kg)",
+      origin_label: "국산",
+      size_band: "2~2.5kg",
+      unit_price: "28000",
+      unit_label: "kg",
+      sale_status: "available",
+      reservable_flag: true,
+      reservation_cutoff_note: "당일 문의 가능",
+      note: "S · 정품 상태 최강"
+    },
+    {
+      id: "pb_6",
+      item_name: "완도전복",
+      origin_label: "국산",
+      size_band: "10~11미",
+      unit_price: "24000",
+      unit_label: "kg",
+      sale_status: "available",
+      reservable_flag: true,
+      reservation_cutoff_note: "당일 문의 가능",
+      note: "SS · 정품 상태 최강"
+    },
+    {
+      id: "pb_7",
+      item_name: "돌돔 (일본산 · 2kg급)",
       origin_label: "일본산",
-      size_band: "2kg급",
+      size_band: "2kg",
+      unit_price: "90000",
+      unit_label: "kg",
+      sale_status: "available",
+      reservable_flag: true,
+      reservation_cutoff_note: "고가 어종 / 예약 문의 권장",
+      note: "SSSSS · 기스 없는 최상급"
+    },
+    {
+      id: "pb_8",
+      item_name: "돌돔 (일본산 · 1.6~1.8kg)",
+      origin_label: "일본산",
+      size_band: "1.6~1.8kg",
+      unit_price: "85000",
+      unit_label: "kg",
+      sale_status: "available",
+      reservable_flag: true,
+      reservation_cutoff_note: "고가 어종 / 예약 문의 권장",
+      note: "SSSS · 기스 없는 최상급"
+    },
+    {
+      id: "pb_9",
+      item_name: "능성어 (일본산)",
+      origin_label: "일본산",
+      size_band: "3.5~4kg",
       unit_price: "40000",
-      unit_label: "fish",
-      sale_status: "sold_out",
-      reservable_flag: false,
-      reservation_cutoff_note: null
+      unit_label: "kg",
+      sale_status: "available",
+      reservable_flag: true,
+      reservation_cutoff_note: "당일 문의 가능",
+      note: "SS · 정품 상태 최강"
+    },
+    {
+      id: "pb_10",
+      item_name: "잿방어 (일본산)",
+      origin_label: "일본산",
+      size_band: "4.5kg",
+      unit_price: "30000",
+      unit_label: "kg",
+      sale_status: "available",
+      reservable_flag: true,
+      reservation_cutoff_note: "당일 문의 가능",
+      note: "SS · 정품 상태 최강"
+    },
+    {
+      id: "pb_11",
+      item_name: "참돔 (일본산 · 2.5~3kg)",
+      origin_label: "일본산",
+      size_band: "2.5~3kg",
+      unit_price: "25000",
+      unit_label: "kg",
+      sale_status: "available",
+      reservable_flag: true,
+      reservation_cutoff_note: "당일 문의 가능",
+      note: "SSS · 정품 상태 최강"
+    },
+    {
+      id: "pb_12",
+      item_name: "참돔 (일본산 · 2kg 이하)",
+      origin_label: "일본산",
+      size_band: "2kg",
+      unit_price: "20000",
+      unit_label: "kg",
+      sale_status: "available",
+      reservable_flag: true,
+      reservation_cutoff_note: "당일 문의 가능",
+      note: "S · 정품 상태 최강"
+    },
+    {
+      id: "pb_13",
+      item_name: "감성돔 (중국산)",
+      origin_label: "중국산",
+      size_band: "1kg",
+      unit_price: "23000",
+      unit_label: "kg",
+      sale_status: "available",
+      reservable_flag: true,
+      reservation_cutoff_note: "당일 문의 가능",
+      note: "SS · 정품 상태 최강"
+    },
+    {
+      id: "pb_14",
+      item_name: "농어 (중국산)",
+      origin_label: "중국산",
+      size_band: "3~3.5kg",
+      unit_price: "23000",
+      unit_label: "kg",
+      sale_status: "available",
+      reservable_flag: true,
+      reservation_cutoff_note: "당일 문의 가능",
+      note: "S · 정품 상태 최강"
+    },
+    {
+      id: "pb_15",
+      item_name: "연어 (노르웨이 · 예약판매)",
+      origin_label: "노르웨이",
+      size_band: "6~8kg",
+      unit_price: "23000",
+      unit_label: "kg",
+      sale_status: "reserved_only",
+      reservable_flag: true,
+      reservation_cutoff_note: "전날 주문 / 반마리는 전날 매칭 시 진행",
+      note: "최상급 · 마리 단위 예약 판매"
     }
   ],
   order_guide: {
-    pickup_note: "직접 픽업은 방문 예정 시간 입력이 필요합니다.",
-    quick_note: "카카오퀵은 픽업 2~3시간 전 주문이 권장됩니다.",
-    parcel_note: "일반택배는 오로시/필렛 위주 권장, 회는 퀵 권장입니다.",
-    processing_rules_summary: ["광어 오로시 kg당 2,000원", "회 손질 kg당 4,000원", "진공포장 가능"],
+    pickup_note: "방문 손님 포장비는 없고, 진공포장은 무료예요. 방문 시간만 미리 알려주세요.",
+    quick_note: "노량진 기준 15km 이내는 카카오퀵 이코노미가 당일택배와 금액 차이가 크지 않을 수 있어요.",
+    parcel_note: "당일택배는 오전 9시 30분 전 문자 주문이 필요하고, 원물은 진공포장이 불가해요.",
+    processing_rules_summary: [
+      "오로시(필렛) kg당 2,000원",
+      "회 작업 kg당 4,000원",
+      "도미 등 껍질 작업 kg당 5,000원",
+      "진공포장은 무료이며 원물은 진공 불가"
+    ],
     cutoff_windows: [
       {
         fulfillment_type: "pickup",
         label: "매장 픽업",
-        cutoff_note: "당일 픽업은 보통 오후 4시 전까지 주문 부탁드려요."
+        cutoff_note: "방문 예정 시간만 먼저 남겨주시면 순서에 맞춰 준비해드려요."
       },
       {
         fulfillment_type: "quick",
         label: "퀵 수령",
-        cutoff_note: "퀵은 최소 2~3시간 전 주문 시 가장 안정적으로 맞춰드릴 수 있어요."
+        cutoff_note: "당일 드실 분은 퀵이 가장 안정적이고, 최소 2~3시간 전 주문이 좋아요."
       },
       {
         fulfillment_type: "parcel",
         label: "택배 수령",
-        cutoff_note: "당일택배는 오전 마감, 일반택배는 필렛/오로시 위주로 안내드려요."
+        cutoff_note: "당일택배는 오전 9시 30분 전 문자 주문, 일반택배는 필렛·오로시 위주로 권장해요."
       }
     ],
     expected_price_note:
-      "시세에 따라 최종 금액은 달라질 수 있지만, 주문 전에 대략적인 금액 구조는 먼저 보실 수 있어요.",
+      "시세표의 가격은 kg당 기준이라, 선택하신 중량대에 맞춰 예상 원물가를 먼저 보여드리고 최종 금액을 다시 안내해드려요.",
     reservation_deposit_policy:
-      "예약 주문은 물건 확보를 위해 예약금 안내 후 진행되며, 준비 완료 후 잔금을 다시 안내드려요."
+      "연어와 일부 고가 어종은 전날 예약이 필요하고, 예약 진행 시 먼저 가능 여부와 예약금 여부를 안내해드려요."
   }
 };
 

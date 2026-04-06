@@ -1,5 +1,8 @@
-import { formatStatusLabel } from "../lib/format";
+import { formatCurrency, formatStatusLabel } from "../lib/format";
+import { StatusBadge } from "../components/StatusBadge";
+import { PriceBoardItem } from "../types";
 import {
+  cutGuides,
   agingSheetOptions,
   getPackagingRecommendation,
   OrderItemFormState,
@@ -13,6 +16,8 @@ interface CustomerOrderItemCardProps {
   totalItems: number;
   fulfillmentType: string;
   cutTypes: string[];
+  matchedBoardItem?: PriceBoardItem;
+  estimatedPriceText?: string | null;
   onRemove: (itemId: string) => void;
   onUpdate: <K extends keyof OrderItemFormState>(
     itemId: string,
@@ -28,6 +33,8 @@ export function CustomerOrderItemCard({
   totalItems,
   fulfillmentType,
   cutTypes,
+  matchedBoardItem,
+  estimatedPriceText,
   onRemove,
   onUpdate,
   onApplyRecommendation
@@ -54,6 +61,7 @@ export function CustomerOrderItemCard({
     item.aging_sheet_type === recommendation.aging_sheet_type &&
     item.vacuum_packaging === recommendation.vacuum_packaging;
   const isParcelSashimi = fulfillmentType === "parcel" && item.requested_cut_type === "sashimi";
+  const cutGuide = cutGuides.find((guide) => guide.cutType === item.requested_cut_type);
 
   return (
     <article className="item-card">
@@ -100,6 +108,30 @@ export function CustomerOrderItemCard({
         </label>
       </div>
 
+      {matchedBoardItem ? (
+        <div className="auto-price-panel">
+          <div className="auto-price-head">
+            <div>
+              <strong>오늘 시세가 자동으로 반영되고 있어요</strong>
+              <p>
+                {matchedBoardItem.origin_label ?? "원산지 확인 후 안내"} · {matchedBoardItem.size_band ?? "중량 확인 후 안내"}
+              </p>
+            </div>
+            <StatusBadge value={matchedBoardItem.sale_status} />
+          </div>
+          <div className="recommendation-summary">
+            <span>
+              시세: {matchedBoardItem.unit_price ? formatCurrency(matchedBoardItem.unit_price) : "확인 후 안내"}
+              {matchedBoardItem.unit_label === "kg" ? " / kg" : ""}
+            </span>
+            <span>
+              예상 원물가: {estimatedPriceText ?? "중량 또는 품목 상태 확인 후 안내"}
+            </span>
+          </div>
+          {matchedBoardItem.note ? <p className="field-hint">{matchedBoardItem.note}</p> : null}
+        </div>
+      ) : null}
+
       <div className="form-grid one">
         <label className="field-block">
           <span>원하시는 손질</span>
@@ -119,6 +151,17 @@ export function CustomerOrderItemCard({
           </select>
         </label>
       </div>
+
+      {cutGuide ? (
+        <div className="cut-guide-card">
+          <strong>{cutGuide.title}</strong>
+          <p>{cutGuide.description}</p>
+          <div className="recommendation-summary">
+            <span>추천 상황: {cutGuide.bestFor}</span>
+          </div>
+          {cutGuide.caution ? <p className="recommendation-caution">{cutGuide.caution}</p> : null}
+        </div>
+      ) : null}
 
       {isParcelSashimi ? (
         <div className="warning-stack">

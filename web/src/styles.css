@@ -1637,6 +1637,27 @@ textarea:disabled {
   margin-top: 8px;
 }
 
+.auto-price-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(49, 130, 246, 0.16);
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.88), rgba(255, 255, 255, 0.96));
+}
+
+.auto-price-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.auto-price-head p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+}
+
 @keyframes rise-up {
   from {
     opacity: 0;

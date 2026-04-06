@@ -376,7 +376,9 @@ function buildKakaoNotice(params: {
     .filter((item) => item.sale_status !== "sold_out")
     .map((item) => {
       const size = item.size_band ? ` ${item.size_band}` : "";
-      const price = item.unit_price ? ` ${formatCurrency(item.unit_price)}` : " 가격 문의";
+      const price = item.unit_price
+        ? ` ${formatCurrency(item.unit_price)}${item.unit_label === "kg" ? "/kg" : ""}`
+        : " 가격 문의";
       const reservation = item.reservable_flag && item.sale_status === "reserved_only" ? " (예약 문의)" : "";
       return `- ${item.item_name}${size}${price}${reservation}`;
     });

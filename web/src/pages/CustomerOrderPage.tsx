@@ -56,6 +56,104 @@ const initialForm: OrderFormState = {
   customer_request: ""
 };
 
+function parseWeightRangeInKg(sizeBand: string | null | undefined) {
+  if (!sizeBand || sizeBand.includes("미")) {
+    return null;
+  }
+
+  const values = Array.from(sizeBand.matchAll(/\d+(?:\.\d+)?/g)).map((match) => Number(match[0]));
+  if (!values.length) {
+    return null;
+  }
+
+  if (sizeBand.includes("~") && values.length >= 2) {
+    return { min: values[0], max: values[1] };
+  }
+
+  return { min: values[0], max: values[0] };
+}
+
+function estimateItemTotal(unitPrice: string | null | undefined, sizeBand: string | null | undefined, quantity: string) {
+  const numericUnitPrice = Number(unitPrice ?? 0);
+  const numericQuantity = Number(quantity || 0);
+
+  if (!numericUnitPrice || !numericQuantity) {
+    return null;
+  }
+
+  const weightRange = parseWeightRangeInKg(sizeBand);
+  if (!weightRange) {
+    return null;
+  }
+
+  return {
+    min: numericUnitPrice * weightRange.min * numericQuantity,
+    max: numericUnitPrice * weightRange.max * numericQuantity
+  };
+}
+
+function formatPriceRange(min: number, max: number) {
+  if (min === max) {
+    return formatCurrency(String(min));
+  }
+
+  return `${formatCurrency(String(min))} ~ ${formatCurrency(String(max))}`;
+}
+
+function resolveFulfillmentGuidance(params: {
+  fulfillmentType: string;
+  fulfillmentSubtype: string;
+  requestedDate: string;
+  addressLine1: string;
+}) {
+  const { fulfillmentType, fulfillmentSubtype, requestedDate, addressLine1 } = params;
+  const normalizedAddress = addressLine1.toLowerCase();
+  const isSeoulMetro =
+    normalizedAddress.includes("서울") ||
+    normalizedAddress.includes("경기") ||
+    normalizedAddress.includes("인천");
+  const today = new Date().toISOString().slice(0, 10);
+  const isToday = !requestedDate || requestedDate === today;
+
+  if (fulfillmentType === "pickup") {
+    return {
+      title: "매장 픽업 가능",
+      description: "방문 예정 시간만 남겨주시면 포장비 없이 순서에 맞춰 준비해드려요.",
+      tone: "good"
+    };
+  }
+
+  if (fulfillmentType === "quick") {
+    if (!isSeoulMetro) {
+      return {
+        title: "퀵 가능 여부 확인 필요",
+        description: "현재 입력하신 주소는 퀵 가능 지역인지 먼저 확인이 필요해요. 보통 서울·경기권은 안내가 빨라요.",
+        tone: "warn"
+      };
+    }
+
+    return {
+      title: isToday ? "오늘 퀵 진행 가능성 높음" : "예약 퀵 진행 가능",
+      description: "서울·경기권은 보통 퀵 진행이 가능하고, 당일 식사라면 가장 안정적인 수령 방식이에요.",
+      tone: "good"
+    };
+  }
+
+  if (fulfillmentSubtype === "parcel_same_day") {
+    return {
+      title: "당일택배는 오전 주문 권장",
+      description: "당일택배는 오전 마감이 빠르고 도착 시간이 랜덤일 수 있어, 급하면 퀵이 더 잘 맞을 수 있어요.",
+      tone: "warn"
+    };
+  }
+
+  return {
+    title: "택배 수령 가능",
+    description: "필렛·오로시처럼 이동 안정성이 좋은 손질이 가장 무난하고, 회 손질은 픽업 또는 퀵이 더 좋아요.",
+    tone: "normal"
+  };
+}
+
 const recentOrderDraftStorageKey = "oneulbada_recent_order_draft";
 
 interface RecentOrderDraft {
@@ -111,11 +209,25 @@ export function CustomerOrderPage() {
       boardItem: board.items.find((boardItem) => boardItem.item_name === item.item_name)
     }))
     .filter((entry) => entry.boardItem);
-  const matchedSubtotal = matchedBoardItems.reduce((sum, entry) => {
-    const unitPrice = Number(entry.boardItem?.unit_price ?? 0);
-    return sum + unitPrice * Number(entry.item.quantity || 0);
-  }, 0);
+  const matchedSubtotalRange = matchedBoardItems.reduce(
+    (sum, entry) => {
+      const estimate = estimateItemTotal(entry.boardItem?.unit_price, entry.boardItem?.size_band, entry.item.quantity);
+
+      if (!estimate) {
+        return sum;
+      }
+
+      return {
+        min: sum.min + estimate.min,
+        max: sum.max + estimate.max
+      };
+    },
+    { min: 0, max: 0 }
+  );
   const hasUnknownItems = items.some((item) => !board.items.some((boardItem) => boardItem.item_name === item.item_name));
+  const hasPendingSizeEstimate = matchedBoardItems.some(
+    (entry) => !estimateItemTotal(entry.boardItem?.unit_price, entry.boardItem?.size_band, entry.item.quantity)
+  );
   const processingEstimate = items.reduce((sum, item) => {
     switch (item.requested_cut_type) {
       case "fillet":
@@ -139,8 +251,8 @@ export function CustomerOrderPage() {
           : form.fulfillment_subtype === "parcel_bus"
             ? { min: 9000, max: 14000 }
             : { min: 7000, max: 10000 };
-  const estimatedMin = matchedSubtotal + processingEstimate + deliveryRange.min;
-  const estimatedMax = matchedSubtotal + processingEstimate + deliveryRange.max;
+  const estimatedMin = matchedSubtotalRange.min + processingEstimate + deliveryRange.min;
+  const estimatedMax = matchedSubtotalRange.max + processingEstimate + deliveryRange.max;
   const reservationDepositMin = Math.round(estimatedMin * 0.3);
   const reservationDepositMax = Math.round(estimatedMax * 0.3);
   const cutoffWindows = board.order_guide.cutoff_windows ?? [
@@ -148,6 +260,12 @@ export function CustomerOrderPage() {
     { fulfillment_type: "quick", label: "퀵 수령", cutoff_note: board.order_guide.quick_note },
     { fulfillment_type: "parcel", label: "택배 수령", cutoff_note: board.order_guide.parcel_note }
   ];
+  const fulfillmentGuidance = resolveFulfillmentGuidance({
+    fulfillmentType: form.fulfillment_type,
+    fulfillmentSubtype: form.fulfillment_subtype,
+    requestedDate: form.requested_date,
+    addressLine1: form.address_line1
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -273,6 +391,14 @@ export function CustomerOrderPage() {
           ...item,
           [key]: value
         };
+
+        if (key === "item_name") {
+          const matchedBoardItem = board.items.find((boardItem) => boardItem.item_name === String(value));
+
+          if (matchedBoardItem) {
+            next.size_band = matchedBoardItem.size_band ?? "";
+          }
+        }
 
         if (key === "requested_cut_type") {
           const recommended = getPackagingRecommendation(String(value), form.fulfillment_type);
@@ -419,14 +545,19 @@ export function CustomerOrderPage() {
       ]
         .filter(Boolean)
         .join("\n"),
-      items: items.map((item) => ({
-        item_name: item.item_name,
-        size_band: item.size_band || undefined,
-        quantity: Number(item.quantity || 1),
-        unit_label: "fish",
-        requested_cut_type: item.requested_cut_type || undefined,
-        packing_option: formatPackingOption(item)
-      }))
+      items: items.map((item) => {
+        const matchedBoardItem = board.items.find((boardItem) => boardItem.item_name === item.item_name);
+
+        return {
+          item_name: item.item_name,
+          origin_label: matchedBoardItem?.origin_label ?? undefined,
+          size_band: item.size_band || undefined,
+          quantity: Number(item.quantity || 1),
+          unit_label: matchedBoardItem?.unit_label ?? "fish",
+          requested_cut_type: item.requested_cut_type || undefined,
+          packing_option: formatPackingOption(item)
+        };
+      })
     };
 
     saveRecentOrderDraft({
@@ -475,7 +606,10 @@ export function CustomerOrderPage() {
                   </p>
                 </div>
                 <div className="row-end">
-                  <strong>{formatCurrency(item.unit_price)}</strong>
+                  <strong>
+                    {formatCurrency(item.unit_price)}
+                    {item.unit_label === "kg" ? " / kg" : ""}
+                  </strong>
                   <StatusBadge value={item.sale_status} />
                 </div>
               </div>
@@ -619,6 +753,11 @@ export function CustomerOrderPage() {
               </label>
             </div>
 
+            <div className={`support-card${fulfillmentGuidance.tone === "good" ? " highlight" : ""}`}>
+              <strong>{fulfillmentGuidance.title}</strong>
+              <p>{fulfillmentGuidance.description}</p>
+            </div>
+
             <div className="estimate-panel">
               <div className="estimate-panel-head">
                 <div>
@@ -631,8 +770,12 @@ export function CustomerOrderPage() {
               </div>
               <div className="summary-grid">
                 <div className="summary-tile">
-                  <span>원물 시세 합계</span>
-                  <strong>{matchedSubtotal > 0 ? formatCurrency(String(matchedSubtotal)) : "확인 후 안내"}</strong>
+                  <span>원물 예상가</span>
+                  <strong>
+                    {matchedSubtotalRange.max > 0
+                      ? formatPriceRange(matchedSubtotalRange.min, matchedSubtotalRange.max)
+                      : "품목 선택 후 안내"}
+                  </strong>
                 </div>
                 <div className="summary-tile">
                   <span>손질비 예상</span>
@@ -650,8 +793,8 @@ export function CustomerOrderPage() {
               <div className="estimate-total-card">
                 <span>예상 총액</span>
                 <strong>
-                  {matchedSubtotal > 0
-                    ? `${formatCurrency(String(estimatedMin))} ~ ${formatCurrency(String(estimatedMax))}`
+                  {matchedSubtotalRange.max > 0
+                    ? formatPriceRange(estimatedMin, estimatedMax)
                     : "선택하신 품목 확인 후 안내"}
                 </strong>
                 <p>
@@ -665,8 +808,8 @@ export function CustomerOrderPage() {
                   <strong>예약 주문 안내</strong>
                   <p>
                     예약 주문은 물건 확보를 위해 예약금 안내 후 진행돼요.
-                    {matchedSubtotal > 0
-                      ? ` 현재 기준 예상 예약금은 ${formatCurrency(String(reservationDepositMin))} ~ ${formatCurrency(String(reservationDepositMax))} 정도예요.`
+                    {matchedSubtotalRange.max > 0
+                      ? ` 현재 기준 예상 예약금은 ${formatPriceRange(reservationDepositMin, reservationDepositMax)} 정도예요.`
                       : " 품목 확인 후 예약금 금액을 안내해드려요."}
                   </p>
                   <p>{board.order_guide.reservation_deposit_policy ?? "준비 완료 후 잔금을 다시 안내해드려요."}</p>
@@ -674,6 +817,9 @@ export function CustomerOrderPage() {
               ) : null}
               {hasUnknownItems ? (
                 <p className="field-hint">시세표에 없는 품목은 대략 금액 계산에서 제외되고, 확인 후 따로 안내드려요.</p>
+              ) : null}
+              {hasPendingSizeEstimate ? (
+                <p className="field-hint">전복처럼 중량 환산이 바로 어려운 품목은 원물 상태를 보고 최종 금액을 다시 정확히 안내해드려요.</p>
               ) : null}
             </div>
 
@@ -694,6 +840,14 @@ export function CustomerOrderPage() {
                   <li>입금 확인 후 손질과 포장을 시작하고, 출고 상태도 링크로 확인하실 수 있어요.</li>
                 </ul>
               </div>
+              <div className="support-card">
+                <strong>주문 수정 가능 시간</strong>
+                <ul className="support-list">
+                  <li>금액 확정 전까지는 주소, 시간대, 포장 옵션은 비교적 편하게 수정 요청하실 수 있어요.</li>
+                  <li>손질이 시작된 뒤에는 수령 시간이나 주소 변경이 제한될 수 있어요.</li>
+                  <li>수정이 필요하면 주문 조회 화면이나 매장 연락처로 바로 알려주시면 돼요.</li>
+                </ul>
+              </div>
             </div>
 
             <div className="order-items-section">
@@ -708,19 +862,32 @@ export function CustomerOrderPage() {
               </div>
 
               <div className="item-list">
-                {items.map((item, index) => (
-                  <CustomerOrderItemCard
-                    key={item.id}
-                    item={item}
-                    index={index}
-                    totalItems={items.length}
-                    fulfillmentType={form.fulfillment_type}
-                    cutTypes={options.cut_types}
-                    onRemove={removeItem}
-                    onUpdate={updateItemField}
-                    onApplyRecommendation={applyRecommendedPackaging}
-                  />
-                ))}
+                {items.map((item, index) => {
+                  const matchedBoardItem = board.items.find((boardItem) => boardItem.item_name === item.item_name);
+                  const estimatedPrice = estimateItemTotal(
+                    matchedBoardItem?.unit_price,
+                    matchedBoardItem?.size_band,
+                    item.quantity
+                  );
+
+                  return (
+                    <CustomerOrderItemCard
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      totalItems={items.length}
+                      fulfillmentType={form.fulfillment_type}
+                      cutTypes={options.cut_types}
+                      matchedBoardItem={matchedBoardItem}
+                      estimatedPriceText={
+                        estimatedPrice ? formatPriceRange(estimatedPrice.min, estimatedPrice.max) : null
+                      }
+                      onRemove={removeItem}
+                      onUpdate={updateItemField}
+                      onApplyRecommendation={applyRecommendedPackaging}
+                    />
+                  );
+                })}
               </div>
             </div>
 
