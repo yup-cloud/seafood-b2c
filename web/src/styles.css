@@ -2531,6 +2531,32 @@ textarea:disabled {
   white-space: nowrap;
 }
 
+.floating-admin-button {
+  position: fixed;
+  right: 18px;
+  bottom: 88px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 74px;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #0f172a;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.14);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  backdrop-filter: blur(14px);
+}
+
+.floating-admin-button:hover {
+  transform: translateY(-1px);
+}
+
 .mobile-tabbar {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -2540,6 +2566,14 @@ textarea:disabled {
   .home-cta-row .secondary-button {
     padding-inline: 12px;
     font-size: 0.92rem;
+  }
+
+  .floating-admin-button {
+    bottom: 94px;
+    right: 14px;
+    min-width: 68px;
+    height: 42px;
+    padding: 0 14px;
   }
 }
 
@@ -2566,5 +2600,13 @@ textarea:disabled {
   .home-cta-row .secondary-button {
     font-size: 0.78rem;
     padding-inline: 8px;
+  }
+
+  .floating-admin-button {
+    bottom: 92px;
+    right: 12px;
+    min-width: 64px;
+    height: 40px;
+    font-size: 0.8rem;
   }
 }

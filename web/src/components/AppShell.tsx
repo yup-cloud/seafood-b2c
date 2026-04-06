@@ -73,14 +73,14 @@ export function AppShell({ children }: PropsWithChildren) {
           </NavLink>
         ))}
       </nav>
+      {!location.pathname.startsWith("/admin") ? (
+        <button type="button" className="floating-admin-button" onClick={openAccessModal}>
+          운영자
+        </button>
+      ) : null}
       <footer className="app-footer">
         <div className="app-footer-inner">
           <p className="footer-copy">오늘 시세 확인부터 주문, 진행 조회까지 한 번에 이용하실 수 있어요.</p>
-          {!location.pathname.startsWith("/admin") ? (
-            <button type="button" className="footer-admin-button prominent" onClick={openAccessModal}>
-              운영자
-            </button>
-          ) : null}
         </div>
       </footer>
       {isAccessOpen ? (
