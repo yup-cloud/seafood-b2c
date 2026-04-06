@@ -57,18 +57,13 @@ export const packagingOptions = [
 export const agingSheetOptions = [
   {
     value: "standard",
-    label: "기본 숙성지",
-    description: "가장 무난한 선택으로, 처음 주문하시는 분께도 편하게 추천드려요."
+    label: "일반 숙성지",
+    description: "가장 무난한 기본 선택이에요."
   },
   {
     value: "premium",
-    label: "프리미엄 숙성지",
-    description: "수분 조절을 조금 더 안정적으로 도와줘 깔끔한 식감을 원하실 때 좋아요."
-  },
-  {
-    value: "oil_absorbing",
-    label: "흡유형 숙성지",
-    description: "기름기 있는 어종이나 보다 담백한 마무리를 원하실 때 고려해보실 수 있어요."
+    label: "고급 숙성지",
+    description: "조금 더 깔끔한 컨디션을 원하실 때 좋아요."
   }
 ] as const;
 
@@ -218,19 +213,19 @@ export function getPackagingRecommendation(
       if (isParcel) {
         return {
           packaging_style: "travel_safe",
-          aging_sheet_type: "oil_absorbing",
+          aging_sheet_type: "premium",
           vacuum_packaging: "no",
           title: "껍질 손질 + 택배 추천 조합",
-          description: "표면 상태와 수분 균형을 고려해 흡유형 숙성지와 이동형 포장을 추천드려요."
+          description: "표면 상태와 수분 균형을 고려해 고급 숙성지와 이동형 포장을 추천드려요."
         };
       }
 
       return {
         packaging_style: "ice_basic",
-        aging_sheet_type: "oil_absorbing",
+        aging_sheet_type: "premium",
         vacuum_packaging: "no",
         title: "껍질 손질 추천 조합",
-        description: "껍질 식감과 표면 컨디션을 생각하면 일반 포장과 흡유형 숙성지가 잘 맞아요."
+        description: "껍질 식감과 표면 컨디션을 생각하면 일반 포장과 고급 숙성지가 잘 맞아요."
       };
 
     case "sekkoshi":

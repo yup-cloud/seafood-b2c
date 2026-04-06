@@ -1000,6 +1000,8 @@ img {
   font-size: 0.93rem;
   font-weight: 740;
   letter-spacing: -0.02em;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .board-item-card p,
@@ -1008,6 +1010,8 @@ img {
   color: var(--text-muted);
   font-size: 0.82rem;
   line-height: 1.4;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .item-card-index {
@@ -1077,12 +1081,16 @@ img {
   font-size: 0.98rem;
   font-weight: 720;
   letter-spacing: -0.024em;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .choice-card span {
   color: var(--text-muted);
   font-size: 0.9rem;
   line-height: 1.5;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .choice-card:hover:not(:disabled) {
@@ -1280,6 +1288,7 @@ img {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 
 .field-block > span {
@@ -1287,6 +1296,7 @@ img {
   font-weight: 650;
   color: var(--text-strong);
   letter-spacing: -0.02em;
+  word-break: keep-all;
 }
 
 input,
@@ -1653,6 +1663,7 @@ textarea:disabled {
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 .status-badge.success {
@@ -1786,11 +1797,15 @@ textarea:disabled {
   line-height: 1.4;
   letter-spacing: -0.02em;
   color: var(--text-strong);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .support-card p {
   margin: 0;
   color: var(--text-muted);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .support-card.highlight {
@@ -2038,6 +2053,7 @@ textarea:disabled {
     font-weight: 700;
     letter-spacing: -0.02em;
     text-decoration: none;
+    white-space: nowrap;
     transition:
       background-color 0.2s ease,
       color 0.2s ease,
@@ -2082,6 +2098,26 @@ textarea:disabled {
 
   .hero-store-meta {
     grid-template-columns: 1fr;
+  }
+
+  .board-item-picker {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .board-item-card-head,
+  .summary-bar,
+  .order-items-head,
+  .item-card-head {
+    min-width: 0;
+  }
+
+  .cutoff-card strong,
+  .support-card strong,
+  .item-card-title,
+  .brand-title,
+  .brand-subtitle {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
 }
 
