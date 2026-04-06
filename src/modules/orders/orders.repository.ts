@@ -547,6 +547,54 @@ export async function getOrderByPublicToken(
   return result.rows[0] ?? null;
 }
 
+export async function getOrderByOrderNo(
+  orderNo: string,
+  executor: Queryable = db
+): Promise<OrderRecord | null> {
+  const result = await executor.query<OrderRecord>(
+    `
+      select
+        id,
+        store_id,
+        order_no,
+        public_token,
+        order_status,
+        pricing_status,
+        payment_status,
+        fulfillment_type,
+        fulfillment_subtype,
+        fulfillment_status,
+        purchase_unit,
+        match_status,
+        requested_date::text,
+        requested_time_slot,
+        requested_at_note,
+        is_reservation,
+        reservation_target_date::text,
+        item_hold_request_note,
+        customer_name,
+        customer_phone,
+        depositor_name,
+        receiver_name,
+        receiver_phone,
+        postal_code,
+        address_line1,
+        address_line2,
+        entrance_password,
+        customer_request,
+        internal_note,
+        source_channel,
+        created_at::text,
+        updated_at::text
+      from orders
+      where order_no = $1
+    `,
+    [orderNo]
+  );
+
+  return result.rows[0] ?? null;
+}
+
 export async function getOrderItems(orderId: string, executor: Queryable = db): Promise<OrderItemRecord[]> {
   const result = await executor.query<OrderItemRecord>(
     `

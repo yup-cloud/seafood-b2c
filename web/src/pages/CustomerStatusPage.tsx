@@ -11,7 +11,7 @@ const statusFlow = ["pricing_pending", "waiting_payment", "ready_for_prep", "com
 
 export function CustomerStatusPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [tokenInput, setTokenInput] = useState(searchParams.get("token") ?? "");
+  const [orderNoInput, setOrderNoInput] = useState(searchParams.get("orderNo") ?? "");
   const [order, setOrder] = useState<PublicOrderStatus | null>(null);
   const [message, setMessage] = useState("");
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
@@ -19,16 +19,18 @@ export function CustomerStatusPage() {
   const hasDirectLinkToken = Boolean(searchParams.get("token"));
 
   useEffect(() => {
-    setTokenInput(searchParams.get("token") ?? "");
+    setOrderNoInput(searchParams.get("orderNo") ?? "");
   }, [searchParams]);
 
   useEffect(() => {
     const token = searchParams.get("token");
-    if (!token) {
+    const orderNo = searchParams.get("orderNo");
+    if (!token && !orderNo) {
       return;
     }
 
     const requestedToken = token;
+    const requestedOrderNo = orderNo;
 
     let cancelled = false;
 
@@ -38,7 +40,9 @@ export function CustomerStatusPage() {
       }
 
       try {
-        const nextOrder = await api.getPublicOrder(requestedToken);
+        const nextOrder = requestedToken
+          ? await api.getPublicOrder(requestedToken)
+          : await api.getPublicOrderByOrderNo(requestedOrderNo ?? "");
         if (cancelled) {
           return;
         }
@@ -84,24 +88,27 @@ export function CustomerStatusPage() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!tokenInput.trim()) {
-      setMessage("주문 접수 후 보내드린 조회 토큰을 입력해주세요.");
+    if (!orderNoInput.trim()) {
+      setMessage("주문 후 안내받은 주문번호를 입력해주세요.");
       return;
     }
 
-    setSearchParams({ token: tokenInput.trim() });
+    setSearchParams({ orderNo: orderNoInput.trim().toUpperCase() });
   }
 
   async function handleRefresh() {
     const token = searchParams.get("token");
-    if (!token) {
-      setMessage("조회 토큰을 먼저 입력해주세요.");
+    const orderNo = searchParams.get("orderNo");
+    if (!token && !orderNo) {
+      setMessage("주문번호를 먼저 입력해주세요.");
       return;
     }
 
     setRefreshing(true);
     try {
-      const nextOrder = await api.getPublicOrder(token);
+      const nextOrder = token
+        ? await api.getPublicOrder(token)
+        : await api.getPublicOrderByOrderNo(orderNo ?? "");
       setOrder(nextOrder);
       setMessage("");
       setLastUpdatedAt(new Date().toISOString());
@@ -117,27 +124,28 @@ export function CustomerStatusPage() {
   const currentStepIndex = order ? statusFlow.indexOf(order.order_status) : -1;
 
   return (
-    <div className="page-content narrow-content">
+    <div className="page-content narrow-content status-page">
       <section className="page-hero compact">
         <div>
           <p className="eyebrow-text">주문 상태 조회</p>
-          <h1 className="page-title">주문 후 진행 상황을 한눈에 확인하세요</h1>
-          <p className="page-description">
-            금액 안내부터 입금 확인, 손질 준비, 출고 완료까지 링크 하나로 편하게 확인하실 수
-            있어요.
-          </p>
+          <h1 className="page-title">주문번호로 진행 상황을 바로 확인하세요</h1>
+          <p className="page-description">금액 안내, 입금 확인, 준비 상태를 한 화면에서 확인하실 수 있어요.</p>
         </div>
       </section>
 
-      <SectionCard title="조회 토큰 입력" subtitle="주문 접수 후 보내드린 조회 링크의 토큰 값을 입력해주세요.">
+      <SectionCard title="주문번호 입력" subtitle="주문 후 안내받은 주문번호를 입력해주세요.">
         {hasDirectLinkToken ? (
           <div className="notice-panel">
             <p>보내드린 링크로 바로 들어오셔서 주문 상태를 자동으로 불러오고 있어요.</p>
-            <p>다른 주문을 조회하실 때만 아래 토큰 입력창을 이용하시면 됩니다.</p>
+            <p>다른 주문은 아래 주문번호로 다시 조회하실 수 있어요.</p>
           </div>
         ) : null}
         <form className="inline-form" onSubmit={handleSubmit}>
-          <input value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} placeholder="받으신 조회 토큰을 입력해주세요" />
+          <input
+            value={orderNoInput}
+            onChange={(event) => setOrderNoInput(event.target.value)}
+            placeholder="예: OB-20260406-123456"
+          />
           <button type="submit" className="primary-button">
             상태 확인하기
           </button>
@@ -159,7 +167,7 @@ export function CustomerStatusPage() {
       </SectionCard>
 
       {order ? (
-        <>
+        <div className="status-section-stack">
           <SectionCard
             title={order.order_no}
             subtitle={order.next_step_message}
@@ -265,7 +273,7 @@ export function CustomerStatusPage() {
               </div>
             </div>
           </SectionCard>
-        </>
+        </div>
       ) : null}
     </div>
   );

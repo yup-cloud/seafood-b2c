@@ -23,6 +23,7 @@ import {
   createOrderRecord,
   getFulfillment,
   getOrderById,
+  getOrderByOrderNo,
   getOrderByPublicToken,
   getOrderItems,
   getOrderQuote,
@@ -408,6 +409,32 @@ export async function createPublicOrder(payload: unknown) {
 
 export async function getPublicOrder(publicToken: string) {
   const order = await getOrderByPublicToken(publicToken);
+  if (!order) {
+    throw notFoundError("ORDER_NOT_FOUND", "주문을 찾을 수 없습니다.");
+  }
+
+  const store = await getDefaultStore();
+  const quote = await getOrderQuote(order.id);
+  return {
+    public_token: order.public_token,
+    order_no: order.order_no,
+    order_status: order.order_status,
+    pricing_status: order.pricing_status,
+    payment_status: order.payment_status,
+    fulfillment_status: order.fulfillment_status,
+    quoted_amount: quote?.final_amount ?? null,
+    bank_guide: {
+      bank_name: store.bank_name ?? env.storeBankName ?? null,
+      bank_account: store.bank_account ?? env.storeBankAccount ?? null,
+      bank_holder: store.bank_holder ?? env.storeBankHolder ?? null
+    },
+    next_step_message: getNextStepMessage(order, quote?.final_amount ?? null)
+  };
+}
+
+export async function getPublicOrderByOrderNo(orderNo: string) {
+  const normalizedOrderNo = orderNo.trim().toUpperCase();
+  const order = await getOrderByOrderNo(normalizedOrderNo);
   if (!order) {
     throw notFoundError("ORDER_NOT_FOUND", "주문을 찾을 수 없습니다.");
   }

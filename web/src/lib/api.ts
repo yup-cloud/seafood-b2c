@@ -53,6 +53,8 @@ export const api = {
       body: JSON.stringify(payload)
     }),
   getPublicOrder: (publicToken: string) => request<PublicOrderStatus>(`/public/orders/${publicToken}`),
+  getPublicOrderByOrderNo: (orderNo: string) =>
+    request<PublicOrderStatus>(`/public/orders/lookup/${encodeURIComponent(orderNo)}`),
   getAdminOrders: (search?: string) =>
     request<AdminOrdersResponse>(`/admin/orders${search ? `?search=${encodeURIComponent(search)}` : ""}`),
   getAdminPriceBoard: (date?: string) =>

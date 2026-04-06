@@ -4,6 +4,7 @@ import { grantAdminAccess } from "../lib/admin-access";
 
 const navigationItems = [
   { to: "/", label: "오늘 시세" },
+  { to: "/customer/half-order", label: "반마리 주문" },
   { to: "/customer/order", label: "주문하기" },
   { to: "/customer/status", label: "주문 확인" }
 ];
@@ -48,31 +49,19 @@ export function AppShell({ children }: PropsWithChildren) {
             <p className="brand-subtitle">당일 시세로 주문하는 믿을 수 있는 수산 서비스</p>
           </div>
         </div>
-        <div className="topbar-actions">
-          <nav className="topnav">
-            {navigationItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) => `topnav-link${isActive ? " active" : ""}`}
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-          {!location.pathname.startsWith("/admin") ? (
-            <button type="button" className="topbar-admin-button" onClick={openAccessModal}>
-              운영자
-            </button>
-          ) : null}
-        </div>
+        <nav className="topnav">
+          {navigationItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => `topnav-link${isActive ? " active" : ""}`}
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
       </header>
       <main className="page-frame">{children}</main>
-      {!location.pathname.startsWith("/admin") ? (
-        <button type="button" className="floating-admin-button" onClick={openAccessModal}>
-          운영자
-        </button>
-      ) : null}
       <nav className="mobile-tabbar" aria-label="모바일 주요 메뉴">
         {navigationItems.map((item) => (
           <NavLink
@@ -83,18 +72,15 @@ export function AppShell({ children }: PropsWithChildren) {
             {item.label}
           </NavLink>
         ))}
-        {!location.pathname.startsWith("/admin") ? (
-          <button type="button" className="mobile-tabbar-link mobile-tabbar-button" onClick={openAccessModal}>
-            운영
-          </button>
-        ) : null}
       </nav>
       <footer className="app-footer">
         <div className="app-footer-inner">
           <p className="footer-copy">오늘 시세 확인부터 주문, 진행 조회까지 한 번에 이용하실 수 있어요.</p>
-          <button type="button" className="footer-admin-button" onClick={openAccessModal}>
-            운영자 전용
-          </button>
+          {!location.pathname.startsWith("/admin") ? (
+            <button type="button" className="footer-admin-button prominent" onClick={openAccessModal}>
+              운영자 화면 열기
+            </button>
+          ) : null}
         </div>
       </footer>
       {isAccessOpen ? (

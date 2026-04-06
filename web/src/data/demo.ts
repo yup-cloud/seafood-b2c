@@ -2,6 +2,7 @@ import {
   AdminOrderDetail,
   AdminOrdersResponse,
   FulfillmentQueueItem,
+  HalfOrderDemandItem,
   OrderFormOptions,
   PaymentReviewItem,
   PriceBoardResponse,
@@ -295,6 +296,45 @@ export const demoOrderStatus: PublicOrderStatus = {
   bank_guide: demoStore.bank_guide,
   next_step_message: "최종 금액 65,000원 확인 후 안내된 계좌로 입금해주세요."
 };
+
+export const demoHalfOrderDemands: HalfOrderDemandItem[] = [
+  {
+    id: "half_1",
+    item_name: "자연산 광어",
+    origin_label: "국산",
+    size_band: "3~5kg",
+    unit_price: "22000",
+    wanted_portion_label: "반마리",
+    waiting_count: 2,
+    fulfillment_hint: "픽업 · 퀵 선호",
+    urgency_label: "오늘 매칭 쉬움",
+    note: "당일 저녁용 문의가 가장 많아요."
+  },
+  {
+    id: "half_2",
+    item_name: "참돔 (일본산 · 2.5~3kg)",
+    origin_label: "일본산",
+    size_band: "2.5~3kg",
+    unit_price: "25000",
+    wanted_portion_label: "반마리",
+    waiting_count: 1,
+    fulfillment_hint: "픽업 선호",
+    urgency_label: "1팀 더 필요",
+    note: "껍질 작업 문의가 함께 들어와요."
+  },
+  {
+    id: "half_3",
+    item_name: "연어 (노르웨이 · 예약판매)",
+    origin_label: "노르웨이",
+    size_band: "6~8kg",
+    unit_price: "23000",
+    wanted_portion_label: "반마리",
+    waiting_count: 1,
+    fulfillment_hint: "전날 예약",
+    urgency_label: "전날 매칭",
+    note: "전날 주문 시 매칭이 가장 잘 돼요."
+  }
+];
 
 export const demoAdminOrders: AdminOrdersResponse = {
   filters: {

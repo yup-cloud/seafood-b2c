@@ -115,6 +115,19 @@ export interface PublicOrderStatus {
   next_step_message: string;
 }
 
+export interface HalfOrderDemandItem {
+  id: string;
+  item_name: string;
+  origin_label: string | null;
+  size_band: string | null;
+  unit_price: string | null;
+  wanted_portion_label: string;
+  waiting_count: number;
+  fulfillment_hint: string;
+  urgency_label: string;
+  note?: string | null;
+}
+
 export interface AdminOrderListItem {
   id: string;
   order_no: string;

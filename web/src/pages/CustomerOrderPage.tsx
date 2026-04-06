@@ -204,6 +204,7 @@ export function CustomerOrderPage() {
   const [submitMessage, setSubmitMessage] = useState("");
   const [recentDraft, setRecentDraft] = useState<RecentOrderDraft | null>(() => loadRecentOrderDraft());
   const [isBoardOpen, setIsBoardOpen] = useState(false);
+  const [showDetailFields, setShowDetailFields] = useState(false);
   const matchedBoardItems = items
     .map((item) => ({
       item,
@@ -339,6 +340,44 @@ export function CustomerOrderPage() {
 
   useEffect(() => {
     if (searchParams.get("restoreRecent") !== "1") {
+      const halfRequested = searchParams.get("half") === "1";
+      const presetFlow = searchParams.get("flow");
+      const presetItem = searchParams.get("item");
+
+      if (!halfRequested && !presetFlow && !presetItem) {
+        return;
+      }
+
+      const nextOrderFlow = presetFlow === "reservation" ? "reservation" : form.order_flow;
+      const nextPurchaseUnit = halfRequested ? "half_request" : form.purchase_unit;
+
+      setForm((current) => ({
+        ...current,
+        order_flow: nextOrderFlow,
+        purchase_unit: nextPurchaseUnit
+      }));
+
+      if (presetItem) {
+        const matchedItem = board.items.find((item) => item.item_name === presetItem);
+        setItems((current) =>
+          current.map((item, index) =>
+            index === 0
+              ? {
+                  ...item,
+                  item_name: presetItem,
+                  size_band: matchedItem?.size_band ?? item.size_band
+                }
+              : item
+          )
+        );
+      }
+
+      setSubmitMessage("반마리 주문 기준으로 바로 시작할 수 있게 맞춰드렸어요.");
+      const next = new URLSearchParams(searchParams);
+      next.delete("half");
+      next.delete("flow");
+      next.delete("item");
+      setSearchParams(next, { replace: true });
       return;
     }
 
@@ -352,7 +391,7 @@ export function CustomerOrderPage() {
     setRecentDraft(savedDraft);
     setSubmitMessage("지난 주문 정보를 불러왔어요. 품목과 수령 방식만 다시 확인해보세요.");
     setSearchParams({}, { replace: true });
-  }, [searchParams, setSearchParams]);
+  }, [board.items, form.order_flow, form.purchase_unit, searchParams, setSearchParams]);
 
   function updateField<K extends keyof OrderFormState>(key: K, value: OrderFormState[K]) {
     setForm((current) => ({
@@ -585,9 +624,7 @@ export function CustomerOrderPage() {
         <div>
           <p className="eyebrow-text">주문하기</p>
           <h1 className="page-title">오늘 시세에서 바로 고르고 주문하세요</h1>
-          <p className="page-description">
-            먼저 품목과 받는 방법을 고르고, 마지막에 연락처와 주소만 남기면 됩니다.
-          </p>
+          <p className="page-description">품목 선택, 받는 방법, 연락처만 남기면 주문이 접수됩니다.</p>
         </div>
         <div className="hero-pills">
           <span className="info-pill">{store.name}</span>
@@ -595,7 +632,7 @@ export function CustomerOrderPage() {
       </section>
 
       <div className="split-layout wide-main">
-        <SectionCard title="오늘 준비 품목" subtitle="필요할 때만 펼쳐서 보고 바로 고르실 수 있어요.">
+        <SectionCard title="오늘 준비 품목" subtitle="펼쳐서 보고 바로 주문할 수 있어요.">
           <div className="summary-bar">
             <div>
               <strong>오늘 시세 {board.items.length}개 품목</strong>
@@ -648,36 +685,25 @@ export function CustomerOrderPage() {
         </SectionCard>
 
         <SectionCard title="주문서 남기기" subtitle="한 주문서 안에서 여러 품목을 함께 담으실 수 있어요.">
-            <div className="starter-preset-panel">
-              <div className="starter-preset-head">
-                <div>
-                  <strong>빠르게 시작하기</strong>
-                  <p>자주 쓰는 방식만 먼저 고르면 아래가 자동으로 맞춰져요.</p>
-                </div>
-                <span className="mini-pill">확인 연락 보통 10~20분 내</span>
-              </div>
-              <div className="choice-grid two starter-choice-grid">
-                {orderStarterPresets.map((preset) => (
-                  <button
-                    key={preset.id}
-                  type="button"
-                  className={`choice-card${
-                    form.order_flow === preset.orderFlow && form.fulfillment_type === preset.fulfillmentType
-                      ? " active"
-                      : ""
-                  }`}
-                  onClick={() => applyStarterPreset(preset.id)}
-                >
-                  <strong>{preset.title}</strong>
-                  <span>{preset.description}</span>
-                  <span className="choice-card-meta">{preset.badge}</span>
-                </button>
-              ))}
-            </div>
+          <div className="quick-preset-row">
+            {orderStarterPresets.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                className={`quick-preset-chip${
+                  form.order_flow === preset.orderFlow && form.fulfillment_type === preset.fulfillmentType
+                    ? " active"
+                    : ""
+                }`}
+                onClick={() => applyStarterPreset(preset.id)}
+              >
+                {preset.title}
+              </button>
+            ))}
           </div>
 
           {recentDraft ? (
-            <div className="banner-notice">
+            <div className="banner-notice compact">
               지난 주문 그대로 다시 하시려면{" "}
               <button type="button" className="inline-text-button" onClick={restoreRecentDraft}>
                 불러오기
@@ -690,7 +716,7 @@ export function CustomerOrderPage() {
             <div className="choice-section">
               <div className="choice-section-head">
                 <strong>1. 주문 방식</strong>
-                <p>오늘 바로 받을지, 예약으로 진행할지 먼저 골라주세요.</p>
+                <p>오늘 주문인지 예약 주문인지 먼저 고르세요.</p>
               </div>
               <div className="choice-grid two">
                 <button
@@ -763,7 +789,7 @@ export function CustomerOrderPage() {
               <div className="order-items-head">
                 <div>
                   <strong>3. 품목 고르기</strong>
-                  <p>필요한 만큼 담고 손질만 정하시면 돼요.</p>
+                  <p>품목을 담고 손질만 고르시면 됩니다.</p>
                 </div>
                 <button type="button" className="secondary-button compact-button" onClick={addItem}>
                   품목 추가
@@ -805,7 +831,7 @@ export function CustomerOrderPage() {
             <div className="choice-section">
               <div className="choice-section-head">
                 <strong>4. 받는 시간과 주소</strong>
-                <p>배송이나 픽업에 필요한 정보만 적어주세요.</p>
+                <p>꼭 필요한 정보만 먼저 적어주세요.</p>
               </div>
             </div>
 
@@ -820,42 +846,15 @@ export function CustomerOrderPage() {
               </label>
             </div>
 
-            <div className="form-grid two">
-              <label className="field-block">
-                <span>받는 분 성함</span>
-                <input value={form.receiver_name} onChange={(event) => updateField("receiver_name", event.target.value)} />
-              </label>
-              <label className="field-block">
-                <span>받는 분 연락처</span>
-                <input value={form.receiver_phone} onChange={(event) => updateField("receiver_phone", event.target.value)} />
-              </label>
-            </div>
-
-            <div className="form-grid two">
-              <label className="field-block">
-                <span>우편번호</span>
-                <input value={form.postal_code} onChange={(event) => updateField("postal_code", event.target.value)} />
-              </label>
-              <label className="field-block">
-                <span>상세 주소</span>
-                <input value={form.address_line2} onChange={(event) => updateField("address_line2", event.target.value)} />
-              </label>
-            </div>
-
             <label className="field-block">
               <span>주소</span>
               <input value={form.address_line1} onChange={(event) => updateField("address_line1", event.target.value)} />
             </label>
 
-            <label className="field-block">
-              <span>추가로 남기실 말씀</span>
-              <textarea value={form.customer_request} onChange={(event) => updateField("customer_request", event.target.value)} placeholder="예: 뼈와 머리도 같이 부탁드려요. 문 앞 수령 원해요." />
-            </label>
-
             <div className="choice-section">
               <div className="choice-section-head">
                 <strong>5. 연락처 남기기</strong>
-                <p>최종 금액과 준비 안내를 드릴 정보를 입력해주세요.</p>
+                <p>최종 금액과 준비 안내를 받을 정보를 남겨주세요.</p>
               </div>
             </div>
 
@@ -874,6 +873,45 @@ export function CustomerOrderPage() {
               <span>입금 예정자명</span>
               <input value={form.depositor_name} onChange={(event) => updateField("depositor_name", event.target.value)} placeholder="주문자명과 다르면 적어주세요" />
             </label>
+
+            <button
+              type="button"
+              className="secondary-button compact-button detail-toggle-button"
+              onClick={() => setShowDetailFields((current) => !current)}
+            >
+              {showDetailFields ? "상세 요청 접기" : "상세 요청 더 보기"}
+            </button>
+
+            {showDetailFields ? (
+              <div className="stack-form">
+                <div className="form-grid two">
+                  <label className="field-block">
+                    <span>받는 분 성함</span>
+                    <input value={form.receiver_name} onChange={(event) => updateField("receiver_name", event.target.value)} />
+                  </label>
+                  <label className="field-block">
+                    <span>받는 분 연락처</span>
+                    <input value={form.receiver_phone} onChange={(event) => updateField("receiver_phone", event.target.value)} />
+                  </label>
+                </div>
+
+                <div className="form-grid two">
+                  <label className="field-block">
+                    <span>우편번호</span>
+                    <input value={form.postal_code} onChange={(event) => updateField("postal_code", event.target.value)} />
+                  </label>
+                  <label className="field-block">
+                    <span>상세 주소</span>
+                    <input value={form.address_line2} onChange={(event) => updateField("address_line2", event.target.value)} />
+                  </label>
+                </div>
+
+                <label className="field-block">
+                  <span>추가로 남기실 말씀</span>
+                  <textarea value={form.customer_request} onChange={(event) => updateField("customer_request", event.target.value)} placeholder="예: 뼈와 머리도 같이 부탁드려요. 문 앞 수령 원해요." />
+                </label>
+              </div>
+            ) : null}
 
             <div className="estimate-panel">
               <div className="estimate-panel-head">
@@ -943,9 +981,6 @@ export function CustomerOrderPage() {
             <div className="warning-stack">
               <p>당일 경락 상황에 따라 품목과 크기는 확인 후 최종 확정될 수 있어요.</p>
               <p>금액 확정 전까지는 주소, 시간, 포장 옵션 수정 요청이 가능해요.</p>
-              {options.warnings.map((warning) => (
-                <p key={warning}>{warning}</p>
-              ))}
             </div>
 
             {submitMessage ? <div className="notice-panel">{submitMessage}</div> : null}
