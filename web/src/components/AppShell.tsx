@@ -60,6 +60,17 @@ export function AppShell({ children }: PropsWithChildren) {
         </nav>
       </header>
       <main className="page-frame">{children}</main>
+      <nav className="mobile-tabbar" aria-label="모바일 주요 메뉴">
+        {navigationItems.map((item) => (
+          <NavLink
+            key={`mobile-${item.to}`}
+            to={item.to}
+            className={({ isActive }) => `mobile-tabbar-link${isActive ? " active" : ""}`}
+          >
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
       <footer className="app-footer">
         <div className="app-footer-inner">
           <p className="footer-copy">오늘 시세 확인부터 주문, 진행 조회까지 한 번에 이용하실 수 있어요.</p>
