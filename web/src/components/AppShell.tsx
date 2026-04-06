@@ -42,7 +42,7 @@ export function AppShell({ children }: PropsWithChildren) {
       <header className="topbar">
         <div className="brand-block">
           <div className="brand-mark">오</div>
-          <div>
+          <div className="brand-copy">
             <p className="brand-title">오늘바다</p>
             <p className="brand-subtitle">당일 시세로 주문하는 믿을 수 있는 수산 서비스</p>
           </div>
