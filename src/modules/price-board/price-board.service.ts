@@ -87,15 +87,36 @@ export async function getTodayPriceBoard(date?: string) {
     board_date: targetDate,
     items,
     order_guide: {
-      pickup_note: "직접 픽업은 방문 예정 시간 입력이 필요합니다.",
-      quick_note: "카카오퀵은 픽업 2~3시간 전 주문이 권장됩니다.",
-      parcel_note: "일반택배는 오로시/필렛 위주 권장, 회는 퀵 권장입니다.",
+      pickup_note: "방문 예정 시간만 남겨주시면 포장비 없이 순서에 맞춰 준비해드려요.",
+      quick_note: "당일 드실 분은 퀵이 가장 안정적이고, 최소 2~3시간 전 주문이 좋아요.",
+      parcel_note: "당일택배는 오전 9시 30분 전 문자 주문, 일반택배는 필렛·오로시 위주로 권장해요.",
       processing_rules_summary: rules
         .filter((rule) => rule.is_active)
         .map((rule) => {
           const fee = rule.fee_amount ? ` ${rule.fee_amount}원` : "";
           return `${rule.species_name} ${rule.cut_type} ${rule.fee_mode}${fee}`.trim();
-        })
+        }),
+      cutoff_windows: [
+        {
+          fulfillment_type: "pickup",
+          label: "매장 픽업",
+          cutoff_note: "방문 예정 시간만 먼저 남겨주시면 순서에 맞춰 준비해드려요."
+        },
+        {
+          fulfillment_type: "quick",
+          label: "퀵 수령",
+          cutoff_note: "서울·경기권 당일 식사는 퀵이 가장 안정적이고, 최소 2~3시간 전 주문이 좋아요."
+        },
+        {
+          fulfillment_type: "parcel",
+          label: "택배 수령",
+          cutoff_note: "당일택배는 오전 9시 30분 전 주문 권장, 일반택배는 필렛·오로시 위주로 안내해드려요."
+        }
+      ],
+      expected_price_note:
+        "시세표는 kg당 기준이라 중량대에 따라 예상 원물가 범위를 먼저 보여드리고, 최종 금액은 다시 정확히 안내해드려요.",
+      reservation_deposit_policy:
+        "연어와 일부 고가 어종은 전날 예약이 필요하고, 예약 진행 시 가능 여부와 예약금 여부를 먼저 안내해드려요."
     }
   };
 }
