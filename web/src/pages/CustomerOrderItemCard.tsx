@@ -14,8 +14,10 @@ interface CustomerOrderItemCardProps {
   item: OrderItemFormState;
   index: number;
   totalItems: number;
+  orderFlow: string;
   fulfillmentType: string;
   cutTypes: string[];
+  boardItems: PriceBoardItem[];
   matchedBoardItem?: PriceBoardItem;
   estimatedPriceText?: string | null;
   onRemove: (itemId: string) => void;
@@ -31,8 +33,10 @@ export function CustomerOrderItemCard({
   item,
   index,
   totalItems,
+  orderFlow,
   fulfillmentType,
   cutTypes,
+  boardItems,
   matchedBoardItem,
   estimatedPriceText,
   onRemove,
@@ -79,14 +83,31 @@ export function CustomerOrderItemCard({
 
       <div className="form-grid three">
         <label className="field-block">
-          <span>품목명</span>
-          <input
-            list="item-options"
-            value={item.item_name}
-            onChange={(event) => onUpdate(item.id, "item_name", event.target.value)}
-            placeholder="예: 광어, 도미, 농어"
-            required
-          />
+          <span>{orderFlow === "same_day" ? "오늘 시세 품목 선택" : "예약 희망 품목명"}</span>
+          {orderFlow === "same_day" ? (
+            <select
+              value={item.item_name}
+              onChange={(event) => onUpdate(item.id, "item_name", event.target.value)}
+              required
+            >
+              <option value="">오늘 시세에서 품목 고르기</option>
+              {boardItems.map((boardItem) => (
+                <option key={boardItem.id ?? boardItem.item_name} value={boardItem.item_name}>
+                  {boardItem.item_name}
+                  {boardItem.size_band ? ` · ${boardItem.size_band}` : ""}
+                  {boardItem.unit_price ? ` · ${formatCurrency(boardItem.unit_price)}/kg` : ""}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              list="item-options"
+              value={item.item_name}
+              onChange={(event) => onUpdate(item.id, "item_name", event.target.value)}
+              placeholder="예: 연어, 돌돔, 광어 큰 사이즈"
+              required
+            />
+          )}
         </label>
         <label className="field-block">
           <span>희망 크기</span>

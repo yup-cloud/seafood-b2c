@@ -758,11 +758,124 @@ export function CustomerOrderPage() {
               <p>{fulfillmentGuidance.description}</p>
             </div>
 
+            <div className="support-grid">
+              <div className="support-card">
+                <strong>주문 전에 가장 많이 물어보시는 내용</strong>
+                <ul className="support-list">
+                  <li>처음 주문이면 `필렛 + 픽업` 또는 `필렛 + 퀵` 조합이 가장 무난해요.</li>
+                  <li>택배 수령은 회 손질보다 필렛이나 통손질이 더 안정적이에요.</li>
+                  <li>반마리 함께 주문은 매칭과 실제 사이즈 확인 후 최종 금액을 다시 안내드려요.</li>
+                </ul>
+              </div>
+              <div className="support-card highlight">
+                <strong>주문 후에는 이렇게 진행돼요</strong>
+                <ul className="support-list">
+                  <li>주문서 접수 후 시세와 품목 상태를 확인해드려요.</li>
+                  <li>최종 금액 또는 예약금 금액을 먼저 안내드려요.</li>
+                  <li>입금 확인 후 손질과 포장을 시작하고, 출고 상태도 링크로 확인하실 수 있어요.</li>
+                </ul>
+              </div>
+              <div className="support-card">
+                <strong>주문 수정 가능 시간</strong>
+                <ul className="support-list">
+                  <li>금액 확정 전까지는 주소, 시간대, 포장 옵션은 비교적 편하게 수정 요청하실 수 있어요.</li>
+                  <li>손질이 시작된 뒤에는 수령 시간이나 주소 변경이 제한될 수 있어요.</li>
+                  <li>수정이 필요하면 주문 조회 화면이나 매장 연락처로 바로 알려주시면 돼요.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="order-items-section">
+              <div className="order-items-head">
+                <div>
+                  <strong>주문 품목</strong>
+                  <p>품목별로 손질과 포장 추천이 달라지므로, 필요한 만큼 차례대로 담아보세요.</p>
+                </div>
+                <button type="button" className="secondary-button compact-button" onClick={addItem}>
+                  품목 추가
+                </button>
+              </div>
+
+              <div className="item-list">
+                {items.map((item, index) => {
+                  const matchedBoardItem = board.items.find((boardItem) => boardItem.item_name === item.item_name);
+                  const estimatedPrice = estimateItemTotal(
+                    matchedBoardItem?.unit_price,
+                    matchedBoardItem?.size_band,
+                    item.quantity
+                  );
+
+                  return (
+                    <CustomerOrderItemCard
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      totalItems={items.length}
+                      orderFlow={form.order_flow}
+                      fulfillmentType={form.fulfillment_type}
+                      cutTypes={options.cut_types}
+                      boardItems={board.items}
+                      matchedBoardItem={matchedBoardItem}
+                      estimatedPriceText={
+                        estimatedPrice ? formatPriceRange(estimatedPrice.min, estimatedPrice.max) : null
+                      }
+                      onRemove={removeItem}
+                      onUpdate={updateItemField}
+                      onApplyRecommendation={applyRecommendedPackaging}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="form-grid two">
+              <label className="field-block">
+                <span>{form.order_flow === "reservation" ? "받고 싶은 날짜" : "가능하면 받고 싶은 날짜"}</span>
+                <input type="date" value={form.requested_date} onChange={(event) => updateField("requested_date", event.target.value)} required={form.order_flow === "reservation"} />
+              </label>
+              <label className="field-block">
+                <span>받고 싶은 시간대</span>
+                <input value={form.requested_time_slot} onChange={(event) => updateField("requested_time_slot", event.target.value)} placeholder="예: 오후 3시 전후" />
+              </label>
+            </div>
+
+            <div className="form-grid two">
+              <label className="field-block">
+                <span>받는 분 성함</span>
+                <input value={form.receiver_name} onChange={(event) => updateField("receiver_name", event.target.value)} />
+              </label>
+              <label className="field-block">
+                <span>받는 분 연락처</span>
+                <input value={form.receiver_phone} onChange={(event) => updateField("receiver_phone", event.target.value)} />
+              </label>
+            </div>
+
+            <div className="form-grid two">
+              <label className="field-block">
+                <span>우편번호</span>
+                <input value={form.postal_code} onChange={(event) => updateField("postal_code", event.target.value)} />
+              </label>
+              <label className="field-block">
+                <span>상세 주소</span>
+                <input value={form.address_line2} onChange={(event) => updateField("address_line2", event.target.value)} />
+              </label>
+            </div>
+
+            <label className="field-block">
+              <span>주소</span>
+              <input value={form.address_line1} onChange={(event) => updateField("address_line1", event.target.value)} />
+            </label>
+
+            <label className="field-block">
+              <span>추가로 남기실 말씀</span>
+              <textarea value={form.customer_request} onChange={(event) => updateField("customer_request", event.target.value)} placeholder="예: 뼈와 머리도 같이 부탁드려요. 문 앞 수령 원해요." />
+            </label>
+
             <div className="estimate-panel">
               <div className="estimate-panel-head">
                 <div>
-                  <strong>예상 금액 구조를 먼저 안내드릴게요</strong>
-                  <p>품목 선택 기준으로 대략적인 범위를 먼저 보여드리고, 실제 준비 전 최종 금액을 다시 확정해드려요.</p>
+                  <strong>마지막으로 예상 금액 범위를 안내드릴게요</strong>
+                  <p>품목, 손질, 수령 방식이 정해진 뒤의 기준이라 실제 주문 감각에 더 가깝게 보실 수 있어요.</p>
                 </div>
                 <span className="mini-pill">
                   {form.order_flow === "reservation" ? "예약금 진행형" : "최종 금액 확정형"}
@@ -822,117 +935,6 @@ export function CustomerOrderPage() {
                 <p className="field-hint">전복처럼 중량 환산이 바로 어려운 품목은 원물 상태를 보고 최종 금액을 다시 정확히 안내해드려요.</p>
               ) : null}
             </div>
-
-            <div className="support-grid">
-              <div className="support-card">
-                <strong>주문 전에 가장 많이 물어보시는 내용</strong>
-                <ul className="support-list">
-                  <li>처음 주문이면 `필렛 + 픽업` 또는 `필렛 + 퀵` 조합이 가장 무난해요.</li>
-                  <li>택배 수령은 회 손질보다 필렛이나 통손질이 더 안정적이에요.</li>
-                  <li>반마리 함께 주문은 매칭과 실제 사이즈 확인 후 최종 금액을 다시 안내드려요.</li>
-                </ul>
-              </div>
-              <div className="support-card highlight">
-                <strong>주문 후에는 이렇게 진행돼요</strong>
-                <ul className="support-list">
-                  <li>주문서 접수 후 시세와 품목 상태를 확인해드려요.</li>
-                  <li>최종 금액 또는 예약금 금액을 먼저 안내드려요.</li>
-                  <li>입금 확인 후 손질과 포장을 시작하고, 출고 상태도 링크로 확인하실 수 있어요.</li>
-                </ul>
-              </div>
-              <div className="support-card">
-                <strong>주문 수정 가능 시간</strong>
-                <ul className="support-list">
-                  <li>금액 확정 전까지는 주소, 시간대, 포장 옵션은 비교적 편하게 수정 요청하실 수 있어요.</li>
-                  <li>손질이 시작된 뒤에는 수령 시간이나 주소 변경이 제한될 수 있어요.</li>
-                  <li>수정이 필요하면 주문 조회 화면이나 매장 연락처로 바로 알려주시면 돼요.</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="order-items-section">
-              <div className="order-items-head">
-                <div>
-                  <strong>주문 품목</strong>
-                  <p>품목별로 손질과 포장 추천이 달라지므로, 필요한 만큼 차례대로 담아보세요.</p>
-                </div>
-                <button type="button" className="secondary-button compact-button" onClick={addItem}>
-                  품목 추가
-                </button>
-              </div>
-
-              <div className="item-list">
-                {items.map((item, index) => {
-                  const matchedBoardItem = board.items.find((boardItem) => boardItem.item_name === item.item_name);
-                  const estimatedPrice = estimateItemTotal(
-                    matchedBoardItem?.unit_price,
-                    matchedBoardItem?.size_band,
-                    item.quantity
-                  );
-
-                  return (
-                    <CustomerOrderItemCard
-                      key={item.id}
-                      item={item}
-                      index={index}
-                      totalItems={items.length}
-                      fulfillmentType={form.fulfillment_type}
-                      cutTypes={options.cut_types}
-                      matchedBoardItem={matchedBoardItem}
-                      estimatedPriceText={
-                        estimatedPrice ? formatPriceRange(estimatedPrice.min, estimatedPrice.max) : null
-                      }
-                      onRemove={removeItem}
-                      onUpdate={updateItemField}
-                      onApplyRecommendation={applyRecommendedPackaging}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="form-grid two">
-              <label className="field-block">
-                <span>{form.order_flow === "reservation" ? "받고 싶은 날짜" : "가능하면 받고 싶은 날짜"}</span>
-                <input type="date" value={form.requested_date} onChange={(event) => updateField("requested_date", event.target.value)} required={form.order_flow === "reservation"} />
-              </label>
-              <label className="field-block">
-                <span>받고 싶은 시간대</span>
-                <input value={form.requested_time_slot} onChange={(event) => updateField("requested_time_slot", event.target.value)} placeholder="예: 오후 3시 전후" />
-              </label>
-            </div>
-
-            <div className="form-grid two">
-              <label className="field-block">
-                <span>받는 분 성함</span>
-                <input value={form.receiver_name} onChange={(event) => updateField("receiver_name", event.target.value)} />
-              </label>
-              <label className="field-block">
-                <span>받는 분 연락처</span>
-                <input value={form.receiver_phone} onChange={(event) => updateField("receiver_phone", event.target.value)} />
-              </label>
-            </div>
-
-            <div className="form-grid two">
-              <label className="field-block">
-                <span>우편번호</span>
-                <input value={form.postal_code} onChange={(event) => updateField("postal_code", event.target.value)} />
-              </label>
-              <label className="field-block">
-                <span>상세 주소</span>
-                <input value={form.address_line2} onChange={(event) => updateField("address_line2", event.target.value)} />
-              </label>
-            </div>
-
-            <label className="field-block">
-              <span>주소</span>
-              <input value={form.address_line1} onChange={(event) => updateField("address_line1", event.target.value)} />
-            </label>
-
-            <label className="field-block">
-              <span>추가로 남기실 말씀</span>
-              <textarea value={form.customer_request} onChange={(event) => updateField("customer_request", event.target.value)} placeholder="예: 뼈와 머리도 같이 부탁드려요. 문 앞 수령 원해요." />
-            </label>
 
             <div className="warning-stack">
               <p>당일 경락 상황에 따라 품목과 크기는 먼저 확인 후 최종 확정될 수 있어요.</p>
