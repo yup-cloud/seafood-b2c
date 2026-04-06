@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { demoOrderStatus, demoStore } from "../data/demo";
@@ -151,6 +151,11 @@ export function CustomerStatusPage() {
           </div>
         ) : null}
         {message ? <p className="helper-text">{message}</p> : null}
+        <div className="inline-actions">
+          <Link to="/customer/order?restoreRecent=1" className="secondary-button compact-button">
+            같은 방식으로 다시 주문하기
+          </Link>
+        </div>
       </SectionCard>
 
       {order ? (
@@ -198,6 +203,26 @@ export function CustomerStatusPage() {
                 {order.bank_guide.bank_name} {order.bank_guide.bank_account}
               </p>
               <p>예금주 {order.bank_guide.bank_holder}</p>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="지금 내가 하면 되는 일" subtitle="주문 상태에 따라 가장 필요한 다음 행동만 간단하게 안내드릴게요.">
+            <div className="support-grid">
+              <div className="support-card">
+                <strong>금액 안내 전 단계</strong>
+                <p>품목 상태와 손질 조건을 확인 중이라면 조금만 기다려주세요. 보통 확인 후 순차적으로 안내드려요.</p>
+              </div>
+              <div className="support-card">
+                <strong>입금 안내를 받으셨다면</strong>
+                <p>입금 후 이 페이지를 새로 확인하시면 준비 상태가 업데이트돼요. 입금자명이 다르면 꼭 같이 알려주세요.</p>
+              </div>
+              <div className="support-card highlight">
+                <strong>급하게 확인이 필요하신가요?</strong>
+                <p>
+                  진행이 오래 멈춘 것처럼 보이면 매장 연락처로 바로 확인하실 수 있어요.
+                  {demoStore.phones[0] ? ` ${demoStore.phones[0]}` : ""}
+                </p>
+              </div>
             </div>
           </SectionCard>
         </>

@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
 import {
@@ -16,6 +16,7 @@ import {
   buildOrderItemDraft,
   formatPackingOption,
   getPackagingRecommendation,
+  orderStarterPresets,
   OrderItemFormState
 } from "./customer-order.lib";
 
@@ -55,8 +56,42 @@ const initialForm: OrderFormState = {
   customer_request: ""
 };
 
+const recentOrderDraftStorageKey = "oneulbada_recent_order_draft";
+
+interface RecentOrderDraft {
+  savedAt: string;
+  form: OrderFormState;
+  items: OrderItemFormState[];
+}
+
+function loadRecentOrderDraft(): RecentOrderDraft | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(recentOrderDraftStorageKey);
+    if (!raw) {
+      return null;
+    }
+
+    return JSON.parse(raw) as RecentOrderDraft;
+  } catch {
+    return null;
+  }
+}
+
+function saveRecentOrderDraft(draft: RecentOrderDraft) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(recentOrderDraftStorageKey, JSON.stringify(draft));
+}
+
 export function CustomerOrderPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [store, setStore] = useState<StoreInfo>(demoStore);
   const [board, setBoard] = useState<PriceBoardResponse>(demoPriceBoard);
   const [options, setOptions] = useState<OrderFormOptions>(demoOrderOptions);
@@ -69,6 +104,7 @@ export function CustomerOrderPage() {
   ]);
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [recentDraft, setRecentDraft] = useState<RecentOrderDraft | null>(() => loadRecentOrderDraft());
   const matchedBoardItems = items
     .map((item) => ({
       item,
@@ -182,6 +218,23 @@ export function CustomerOrderPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (searchParams.get("restoreRecent") !== "1") {
+      return;
+    }
+
+    const savedDraft = loadRecentOrderDraft();
+    if (!savedDraft) {
+      return;
+    }
+
+    setForm(savedDraft.form);
+    setItems(savedDraft.items);
+    setRecentDraft(savedDraft);
+    setSubmitMessage("지난 주문 정보를 불러왔어요. 품목과 수령 방식만 다시 확인해보세요.");
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   function updateField<K extends keyof OrderFormState>(key: K, value: OrderFormState[K]) {
     setForm((current) => ({
       ...current,
@@ -256,6 +309,31 @@ export function CustomerOrderPage() {
     ]);
   }
 
+  function applyStarterPreset(presetId: string) {
+    const preset = orderStarterPresets.find((entry) => entry.id === presetId);
+    if (!preset) {
+      return;
+    }
+
+    const firstBoardItem = board.items[0];
+
+    setForm((current) => ({
+      ...current,
+      order_flow: preset.orderFlow,
+      fulfillment_type: preset.fulfillmentType,
+      fulfillment_subtype:
+        preset.fulfillmentType === "parcel" ? current.fulfillment_subtype || options.parcel_subtypes[0] || "" : ""
+    }));
+    setItems([
+      buildOrderItemDraft({
+        fulfillmentType: preset.fulfillmentType,
+        requestedCutType: preset.cutType,
+        itemName: firstBoardItem?.item_name,
+        sizeBand: firstBoardItem?.size_band ?? ""
+      })
+    ]);
+  }
+
   function removeItem(itemId: string) {
     setItems((current) => (current.length > 1 ? current.filter((item) => item.id !== itemId) : current));
   }
@@ -280,6 +358,19 @@ export function CustomerOrderPage() {
           : item
       )
     );
+  }
+
+  function restoreRecentDraft() {
+    const savedDraft = loadRecentOrderDraft();
+    if (!savedDraft) {
+      setSubmitMessage("불러올 지난 주문 정보가 아직 없어요. 먼저 한 번 주문서를 남겨보시면 다음부터 바로 불러올 수 있어요.");
+      return;
+    }
+
+    setForm(savedDraft.form);
+    setItems(savedDraft.items);
+    setRecentDraft(savedDraft);
+    setSubmitMessage("지난 주문 정보를 불러왔어요. 그대로 다시 주문하시거나 필요한 부분만 바꿔보세요.");
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -337,6 +428,13 @@ export function CustomerOrderPage() {
         packing_option: formatPackingOption(item)
       }))
     };
+
+    saveRecentOrderDraft({
+      savedAt: new Date().toISOString(),
+      form,
+      items
+    });
+    setRecentDraft(loadRecentOrderDraft());
 
     try {
       const result = await api.createOrder(payload);
@@ -399,6 +497,45 @@ export function CustomerOrderPage() {
         </SectionCard>
 
         <SectionCard title="주문서 남기기" subtitle="한 주문서 안에서 여러 품목을 함께 담으실 수 있어요.">
+          <div className="starter-preset-panel">
+            <div className="starter-preset-head">
+              <div>
+                <strong>처음 주문이시라면 추천 조합부터 시작해보세요</strong>
+                <p>가장 많이 선택되는 주문 흐름과 손질 방식을 한 번에 먼저 맞춰드릴게요.</p>
+              </div>
+              <span className="mini-pill">확인 연락 보통 10~20분 내</span>
+            </div>
+            <div className="choice-grid three">
+              {orderStarterPresets.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  className={`choice-card${
+                    form.order_flow === preset.orderFlow && form.fulfillment_type === preset.fulfillmentType
+                      ? " active"
+                      : ""
+                  }`}
+                  onClick={() => applyStarterPreset(preset.id)}
+                >
+                  <strong>{preset.title}</strong>
+                  <span>{preset.description}</span>
+                  <span className="choice-card-meta">{preset.badge}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {recentDraft ? (
+            <div className="banner-notice">
+              지난 주문 정보를 저장해두었어요. 같은 방식으로 다시 주문하시려면
+              {" "}
+              <button type="button" className="inline-text-button" onClick={restoreRecentDraft}>
+                지난 주문 불러오기
+              </button>
+              를 눌러주세요.
+            </div>
+          ) : null}
+
           <form className="order-form" onSubmit={handleSubmit}>
             <div className="form-grid two">
               <label className="field-block">
@@ -538,6 +675,25 @@ export function CustomerOrderPage() {
               {hasUnknownItems ? (
                 <p className="field-hint">시세표에 없는 품목은 대략 금액 계산에서 제외되고, 확인 후 따로 안내드려요.</p>
               ) : null}
+            </div>
+
+            <div className="support-grid">
+              <div className="support-card">
+                <strong>주문 전에 가장 많이 물어보시는 내용</strong>
+                <ul className="support-list">
+                  <li>처음 주문이면 `필렛 + 픽업` 또는 `필렛 + 퀵` 조합이 가장 무난해요.</li>
+                  <li>택배 수령은 회 손질보다 필렛이나 통손질이 더 안정적이에요.</li>
+                  <li>반마리 함께 주문은 매칭과 실제 사이즈 확인 후 최종 금액을 다시 안내드려요.</li>
+                </ul>
+              </div>
+              <div className="support-card highlight">
+                <strong>주문 후에는 이렇게 진행돼요</strong>
+                <ul className="support-list">
+                  <li>주문서 접수 후 시세와 품목 상태를 확인해드려요.</li>
+                  <li>최종 금액 또는 예약금 금액을 먼저 안내드려요.</li>
+                  <li>입금 확인 후 손질과 포장을 시작하고, 출고 상태도 링크로 확인하실 수 있어요.</li>
+                </ul>
+              </div>
             </div>
 
             <div className="order-items-section">

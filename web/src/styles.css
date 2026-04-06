@@ -1561,6 +1561,82 @@ textarea:disabled {
   color: #b42318;
 }
 
+.starter-preset-panel {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 28px;
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(49, 130, 246, 0.16);
+  background: linear-gradient(180deg, rgba(244, 248, 255, 0.96), rgba(255, 255, 255, 0.98));
+}
+
+.starter-preset-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.starter-preset-head p {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+}
+
+.choice-card-meta {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(49, 130, 246, 0.1);
+  color: var(--blue-strong);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.support-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.support-card {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.support-card strong {
+  font-size: 1rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+
+.support-card p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.support-card.highlight {
+  border-color: rgba(49, 130, 246, 0.16);
+  background: linear-gradient(180deg, rgba(237, 245, 255, 0.92), rgba(255, 255, 255, 0.98));
+}
+
+.support-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-muted);
+}
+
+.support-list li + li {
+  margin-top: 8px;
+}
+
 @keyframes rise-up {
   from {
     opacity: 0;
@@ -1579,7 +1655,8 @@ textarea:disabled {
   .service-step-grid,
   .cutoff-grid,
   .summary-grid,
-  .detail-grid {
+  .detail-grid,
+  .support-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1637,6 +1714,7 @@ textarea:disabled {
   .consumer-info-grid,
   .service-step-grid,
   .cutoff-grid,
+  .support-grid,
   .choice-grid.two,
   .choice-grid.three,
   .form-grid.two,
@@ -1653,7 +1731,8 @@ textarea:disabled {
   }
 
   .trust-strip,
-  .estimate-panel-head {
+  .estimate-panel-head,
+  .starter-preset-head {
     grid-template-columns: 1fr;
     display: grid;
   }

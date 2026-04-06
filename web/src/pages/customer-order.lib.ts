@@ -18,6 +18,16 @@ export interface PackagingRecommendation {
   caution?: string;
 }
 
+export interface OrderStarterPreset {
+  id: string;
+  title: string;
+  description: string;
+  orderFlow: string;
+  fulfillmentType: string;
+  cutType: string;
+  badge: string;
+}
+
 export const packagingOptions = [
   {
     value: "ice_basic",
@@ -66,6 +76,36 @@ export const vacuumOptions = [
     description: "회 손질이나 즉시 드실 예정이라면 일반 포장으로도 충분해요."
   }
 ] as const;
+
+export const orderStarterPresets: OrderStarterPreset[] = [
+  {
+    id: "beginner-home",
+    title: "처음 주문이라면 이 조합",
+    description: "가장 무난한 손질과 픽업 기준으로 먼저 시작해보실 수 있어요.",
+    orderFlow: "same_day",
+    fulfillmentType: "pickup",
+    cutType: "fillet",
+    badge: "초보 추천"
+  },
+  {
+    id: "same-day-quick",
+    title: "오늘 바로 드실 분 추천",
+    description: "회나 필렛을 빠르게 받아보고 싶을 때 가장 많이 고르시는 방식이에요.",
+    orderFlow: "same_day",
+    fulfillmentType: "quick",
+    cutType: "sashimi",
+    badge: "당일 수령"
+  },
+  {
+    id: "travel-safe",
+    title: "택배·이동 거리 고려 조합",
+    description: "장거리 이동이나 택배 수령을 고려해 포장 안정성을 우선으로 맞춰드려요.",
+    orderFlow: "reservation",
+    fulfillmentType: "parcel",
+    cutType: "fillet",
+    badge: "안전 포장"
+  }
+];
 
 function buildItemId() {
   return `item_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;

@@ -101,6 +101,21 @@ export function AdminDashboardPage() {
     }),
     [board, noticeTemplate, store]
   );
+  const urgentOrders = useMemo(
+    () =>
+      ordersResponse.orders
+        .map((order) => ({
+          ...order,
+          priorityScore:
+            (order.payment_status === "unpaid" ? 4 : 0) +
+            (order.order_status === "ready_for_prep" ? 3 : 0) +
+            (order.match_status === "matching_waiting" ? 2 : 0) +
+            (order.is_reservation ? 1 : 0)
+        }))
+        .sort((left, right) => right.priorityScore - left.priorityScore)
+        .slice(0, 3),
+    [ordersResponse.orders]
+  );
 
   async function handleCopyNotice() {
     try {
@@ -108,6 +123,15 @@ export function AdminDashboardPage() {
       setCopyMessage("카톡 공지 문구를 복사했어요. 바로 붙여넣어 올리시면 됩니다.");
     } catch {
       setCopyMessage("자동 복사가 어려워 미리보기 문구를 직접 선택해 복사해주세요.");
+    }
+  }
+
+  async function handleCopyOrderGuide(orderNo: string, customerName: string, text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyMessage(`${orderNo} ${customerName} 고객 안내 문구를 복사했어요.`);
+    } catch {
+      setCopyMessage("자동 복사가 어려워 화면의 안내 문구를 직접 복사해주세요.");
     }
   }
 
@@ -181,6 +205,41 @@ export function AdminDashboardPage() {
           </div>
           <textarea className="kakao-notice-preview" value={noticeText} readOnly />
           {copyMessage ? <p className="helper-text">{copyMessage}</p> : null}
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="지금 먼저 보면 좋은 주문"
+        subtitle="입금, 손질, 반마리 매칭 상태를 기준으로 우선 순위를 먼저 추천해드릴게요."
+      >
+        <div className="support-grid">
+          {urgentOrders.map((order) => {
+            const quickGuide = buildOrderGuideMessage(order);
+
+            return (
+              <div key={order.id} className="support-card highlight">
+                <strong>{order.order_no}</strong>
+                <p>
+                  {order.customer_name} · {order.item_summary ?? "품목 확인 필요"}
+                </p>
+                <p>{resolveUrgentReason(order)}</p>
+                <div className="summary-bar">
+                  <StatusBadge value={order.payment_status} />
+                  <Link className="text-link" to={`/admin/orders/${order.id}`}>
+                    상세 보기
+                  </Link>
+                </div>
+                <textarea className="kakao-notice-preview small" value={quickGuide} readOnly />
+                <button
+                  type="button"
+                  className="secondary-button compact-button"
+                  onClick={() => handleCopyOrderGuide(order.order_no, order.customer_name, quickGuide)}
+                >
+                  고객 안내 문구 복사
+                </button>
+              </div>
+            );
+          })}
         </div>
       </SectionCard>
 
@@ -272,6 +331,38 @@ export function AdminDashboardPage() {
       </div>
     </div>
   );
+}
+
+function resolveUrgentReason(order: AdminOrdersResponse["orders"][number]) {
+  if (order.payment_status === "unpaid") {
+    return "최종 금액 안내 후 미입금 상태라 다음 단계가 멈춰 있어요. 빠르게 확인 안내를 보내는 게 좋아요.";
+  }
+
+  if (order.match_status === "matching_waiting") {
+    return "반마리 또는 예약 매칭 대기 상태라 확인이 늦어지면 이탈 가능성이 커요.";
+  }
+
+  if (order.order_status === "ready_for_prep") {
+    return "입금 확인이 끝난 주문이라 손질 준비 순서를 바로 잡아주는 게 좋아요.";
+  }
+
+  return "지금 처리 흐름을 한 번 더 확인해두면 안전한 주문이에요.";
+}
+
+function buildOrderGuideMessage(order: AdminOrdersResponse["orders"][number]) {
+  if (order.payment_status === "unpaid") {
+    return `[${order.order_no}] ${order.customer_name}님, 금액 안내가 완료되어 입금 확인 후 바로 준비를 시작할 수 있어요. 입금 후 이 메시지에 입금자명만 남겨주시면 더 빠르게 확인해드릴게요.`;
+  }
+
+  if (order.match_status === "matching_waiting") {
+    return `[${order.order_no}] ${order.customer_name}님, 반마리/예약 매칭 여부를 확인 중이에요. 확인되는 대로 가능 여부와 금액을 먼저 안내드릴게요.`;
+  }
+
+  if (order.order_status === "ready_for_prep") {
+    return `[${order.order_no}] ${order.customer_name}님, 입금 확인이 완료되어 지금 손질 준비에 들어가고 있어요. 준비가 끝나면 수령 방식에 맞춰 다시 안내드릴게요.`;
+  }
+
+  return `[${order.order_no}] ${order.customer_name}님, 주문 상태를 확인 중이며 변동이 있으면 바로 안내드릴게요.`;
 }
 
 function buildKakaoNotice(params: {
