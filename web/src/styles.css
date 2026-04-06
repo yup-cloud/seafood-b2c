@@ -1516,6 +1516,38 @@ textarea:disabled {
   margin: 0;
 }
 
+.import-preview-item.editable {
+  gap: 10px;
+}
+
+.inline-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.field-block.compact {
+  gap: 6px;
+}
+
+.field-block.compact span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+  color: var(--text-strong);
+}
+
+.text-link.danger {
+  color: #dc2626;
+}
+
 .banner-notice {
   padding: 15px 18px;
   border-radius: 18px;

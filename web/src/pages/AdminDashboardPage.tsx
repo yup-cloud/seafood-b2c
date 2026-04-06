@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { MetricCard } from "../components/MetricCard";
 import { SectionCard } from "../components/SectionCard";
@@ -31,6 +31,7 @@ export function AdminDashboardPage() {
   const [parseMessage, setParseMessage] = useState("");
   const [isSavingBoard, setIsSavingBoard] = useState(false);
   const [parsedPreview, setParsedPreview] = useState<PriceBoardResponse | null>(null);
+  const [isLoadingPreviousBoard, setIsLoadingPreviousBoard] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -159,6 +160,89 @@ export function AdminDashboardPage() {
     );
   }
 
+  function handlePreviewItemChange(
+    itemIndex: number,
+    field: keyof PriceBoardResponse["items"][number],
+    value: string | boolean
+  ) {
+    setParsedPreview((current) => {
+      const base = current ?? {
+        ...board,
+        items: [...board.items]
+      };
+      const nextItems = [...base.items];
+      const nextItem = { ...nextItems[itemIndex] };
+
+      if (field === "reservable_flag" && typeof value === "boolean") {
+        nextItem.reservable_flag = value;
+      } else if (typeof value === "string") {
+        if (field === "sale_status") {
+          nextItem.sale_status = value;
+        } else if (field === "item_name") {
+          nextItem.item_name = value;
+        } else if (field === "origin_label") {
+          nextItem.origin_label = value || null;
+        } else if (field === "size_band") {
+          nextItem.size_band = value || null;
+        } else if (field === "unit_price") {
+          nextItem.unit_price = value || null;
+        } else if (field === "note") {
+          nextItem.note = value || null;
+        } else if (field === "reservation_cutoff_note") {
+          nextItem.reservation_cutoff_note = value || null;
+        }
+      }
+
+      nextItems[itemIndex] = nextItem;
+      return {
+        ...base,
+        items: nextItems
+      };
+    });
+  }
+
+  function handleRemovePreviewItem(itemIndex: number) {
+    setParsedPreview((current) => {
+      const base = current ?? {
+        ...board,
+        items: [...board.items]
+      };
+
+      return {
+        ...base,
+        items: base.items.filter((_, index) => index !== itemIndex)
+      };
+    });
+  }
+
+  async function handleLoadPreviousBoard() {
+    const previousDate = toDateOffset(board.board_date, -1);
+    setIsLoadingPreviousBoard(true);
+    setParseMessage("");
+
+    try {
+      const previous = await api.getAdminPriceBoard(previousDate);
+      if (!previous.items.length) {
+        setParseMessage("어제 시세가 아직 등록되지 않았어요. 카톡 시세표 붙여넣기로 시작해보세요.");
+        return;
+      }
+
+      const previousBoard: PriceBoardResponse = {
+        ...board,
+        board_date: previousDate,
+        items: previous.items
+      };
+
+      setParsedPreview(previousBoard);
+      setBoard(previousBoard);
+      setParseMessage("어제 시세를 불러왔어요. 바뀐 품목만 수정한 뒤 오늘 시세로 반영하시면 됩니다.");
+    } catch {
+      setParseMessage("어제 시세를 불러오지 못했어요. 카톡 시세표 붙여넣기 방식으로 진행해주세요.");
+    } finally {
+      setIsLoadingPreviousBoard(false);
+    }
+  }
+
   async function handleApplyParsedBoard() {
     const source = parsedPreview ?? parsePriceBoardNotice(pricePaste, board.board_date);
 
@@ -281,6 +365,14 @@ export function AdminDashboardPage() {
               <span>사장님이 원래 쓰던 카톡 시세표 형식을 그대로 붙여넣으면 됩니다.</span>
             </div>
             <div className="button-row">
+              <button
+                type="button"
+                className="secondary-button compact-button"
+                onClick={handleLoadPreviousBoard}
+                disabled={isLoadingPreviousBoard}
+              >
+                {isLoadingPreviousBoard ? "불러오는 중..." : "어제 시세 불러오기"}
+              </button>
               <button type="button" className="secondary-button compact-button" onClick={handleParsePriceText}>
                 자동 추출
               </button>
@@ -297,17 +389,94 @@ export function AdminDashboardPage() {
           {parseMessage ? <p className="helper-text">{parseMessage}</p> : null}
         </div>
         <div className="import-preview-grid">
-          {(parsedPreview?.items ?? board.items).slice(0, 8).map((item) => (
-            <article key={`${item.item_name}-${item.size_band ?? "na"}`} className="import-preview-item">
+          {(parsedPreview?.items ?? board.items).map((item, index) => (
+            <article key={`${item.item_name}-${item.size_band ?? "na"}-${index}`} className="import-preview-item editable">
               <div className="summary-bar">
-                <strong>{item.item_name}</strong>
-                <StatusBadge value={item.sale_status} />
+                <strong>품목 {index + 1}</strong>
+                <button
+                  type="button"
+                  className="text-link danger"
+                  onClick={() => handleRemovePreviewItem(index)}
+                >
+                  삭제
+                </button>
               </div>
-              <p>
-                {(item.origin_label ?? "원산지 확인") + (item.size_band ? ` · ${item.size_band}` : "")}
-              </p>
-              <p>{item.unit_price ? `${formatCurrency(item.unit_price)}${item.unit_label === "kg" ? "/kg" : ""}` : "가격 확인 필요"}</p>
-              {item.note ? <small>{item.note}</small> : null}
+              <label className="field-block compact">
+                <span>품목명</span>
+                <input
+                  value={item.item_name}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    handlePreviewItemChange(index, "item_name", event.target.value)
+                  }
+                />
+              </label>
+              <div className="inline-fields">
+                <label className="field-block compact">
+                  <span>원산지</span>
+                  <input
+                    value={item.origin_label ?? ""}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                      handlePreviewItemChange(index, "origin_label", event.target.value)
+                    }
+                  />
+                </label>
+                <label className="field-block compact">
+                  <span>중량대</span>
+                  <input
+                    value={item.size_band ?? ""}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                      handlePreviewItemChange(index, "size_band", event.target.value)
+                    }
+                  />
+                </label>
+              </div>
+              <div className="inline-fields">
+                <label className="field-block compact">
+                  <span>kg당 가격</span>
+                  <input
+                    inputMode="numeric"
+                    value={item.unit_price ?? ""}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                      handlePreviewItemChange(index, "unit_price", event.target.value.replace(/[^\d]/g, ""))
+                    }
+                  />
+                </label>
+                <label className="field-block compact">
+                  <span>상태</span>
+                  <select
+                    value={item.sale_status}
+                    onChange={(event) => handlePreviewItemChange(index, "sale_status", event.target.value)}
+                  >
+                    <option value="available">판매중</option>
+                    <option value="reserved_only">예약문의</option>
+                    <option value="sold_out">품절</option>
+                  </select>
+                </label>
+              </div>
+              <label className="field-block compact">
+                <span>메모</span>
+                <input
+                  value={item.note ?? ""}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    handlePreviewItemChange(index, "note", event.target.value)
+                  }
+                />
+              </label>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={item.reservable_flag}
+                  onChange={(event) =>
+                    handlePreviewItemChange(index, "reservable_flag", event.target.checked)
+                  }
+                />
+                <span>예약/전날 문의 품목</span>
+              </label>
+              <small>
+                {item.unit_price
+                  ? `${formatCurrency(item.unit_price)}${item.unit_label === "kg" ? "/kg" : ""}`
+                  : "가격 확인 필요"}
+              </small>
             </article>
           ))}
         </div>
@@ -554,6 +723,14 @@ function parsePriceBoardNotice(text: string, fallbackDate: string): PriceBoardRe
     items,
     order_guide: demoPriceBoard.order_guide
   };
+}
+
+function toDateOffset(dateText: string, offsetDays: number) {
+  const [year, month, day] = dateText.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + offsetDays);
+
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function resolveUrgentReason(order: AdminOrdersResponse["orders"][number]) {
