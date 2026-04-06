@@ -88,35 +88,26 @@ export const vacuumOptions = [
 export const orderStarterPresets: OrderStarterPreset[] = [
   {
     id: "beginner-home",
-    title: "처음 주문이라면 이 조합",
-    description: "가장 무난한 손질과 픽업 기준으로 먼저 시작해보실 수 있어요.",
+    title: "처음 주문 추천",
+    description: "가장 무난한 시작 조합",
     orderFlow: "same_day",
     fulfillmentType: "pickup",
     cutType: "fillet",
     badge: "초보 추천"
   },
   {
-    id: "same-day-quick",
-    title: "오늘 바로 드실 분 추천",
-    description: "회나 필렛을 빠르게 받아보고 싶을 때 가장 많이 고르시는 방식이에요.",
+    id: "same-day-eat",
+    title: "오늘 바로 드실 분",
+    description: "당일 식사에 잘 맞는 조합",
     orderFlow: "same_day",
     fulfillmentType: "quick",
     cutType: "sashimi",
     badge: "당일 수령"
   },
   {
-    id: "gift-ready",
-    title: "손님상·선물용 추천",
-    description: "보기 좋은 포장과 바로 드시기 좋은 손질 조합으로 먼저 맞춰드려요.",
-    orderFlow: "same_day",
-    fulfillmentType: "pickup",
-    cutType: "sashimi",
-    badge: "대접용"
-  },
-  {
     id: "travel-safe",
-    title: "택배·이동 거리 고려 조합",
-    description: "장거리 이동이나 택배 수령을 고려해 포장 안정성을 우선으로 맞춰드려요.",
+    title: "택배·이동 거리",
+    description: "택배와 장거리 이동 추천",
     orderFlow: "reservation",
     fulfillmentType: "parcel",
     cutType: "fillet",

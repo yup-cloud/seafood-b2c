@@ -203,6 +203,7 @@ export function CustomerOrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [recentDraft, setRecentDraft] = useState<RecentOrderDraft | null>(() => loadRecentOrderDraft());
+  const [isBoardOpen, setIsBoardOpen] = useState(true);
   const matchedBoardItems = items
     .map((item) => ({
       item,
@@ -595,54 +596,71 @@ export function CustomerOrderPage() {
       </section>
 
       <div className="split-layout wide-main">
-        <SectionCard title="오늘 준비 가능한 품목" subtitle="시세와 준비 가능 여부를 먼저 확인해보세요.">
-          <div className="stack-list">
-            {board.items.map((item) => (
-              <div key={item.id ?? item.item_name} className="list-row">
-                <div>
-                  <strong>{item.item_name}</strong>
-                  <p>
-                    {item.origin_label ?? "원산지 미지정"} · {item.size_band ?? "규격 미지정"}
-                  </p>
-                </div>
-                <div className="row-end">
-                  <strong>
-                    {formatCurrency(item.unit_price)}
-                    {item.unit_label === "kg" ? " / kg" : ""}
-                  </strong>
-                  <StatusBadge value={item.sale_status} />
-                </div>
+        <SectionCard title="오늘 준비 가능한 품목" subtitle="원하실 때만 펼쳐서 확인하실 수 있어요.">
+          <div className="summary-bar">
+            <div>
+              <strong>오늘 시세 {board.items.length}개 품목</strong>
+              <span>주문 전에 시세와 준비 가능 품목만 빠르게 확인해보세요.</span>
+            </div>
+            <button
+              type="button"
+              className="secondary-button compact-button"
+              onClick={() => setIsBoardOpen((current) => !current)}
+            >
+              {isBoardOpen ? "접기" : "펼치기"}
+            </button>
+          </div>
+          {isBoardOpen ? (
+            <>
+              <div className="stack-list">
+                {board.items.map((item) => (
+                  <div key={item.id ?? item.item_name} className="list-row">
+                    <div>
+                      <strong>{item.item_name}</strong>
+                      <p>
+                        {item.origin_label ?? "원산지 미지정"} · {item.size_band ?? "규격 미지정"}
+                      </p>
+                    </div>
+                    <div className="row-end">
+                      <strong>
+                        {formatCurrency(item.unit_price)}
+                        {item.unit_label === "kg" ? " / kg" : ""}
+                      </strong>
+                      <StatusBadge value={item.sale_status} />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="notice-panel">
-            <p>매장 픽업: {board.order_guide.pickup_note}</p>
-            <p>퀵 배송: {board.order_guide.quick_note}</p>
-            <p>택배 수령: {board.order_guide.parcel_note}</p>
-          </div>
-          <div className="cutoff-grid compact">
-            {cutoffWindows.map((cutoff) => (
-              <article key={cutoff.fulfillment_type} className="cutoff-card">
-                <p className="cutoff-card-label">{cutoff.label}</p>
-                <strong>{cutoff.cutoff_note}</strong>
-              </article>
-            ))}
-          </div>
+              <div className="notice-panel">
+                <p>픽업: {board.order_guide.pickup_note}</p>
+                <p>퀵: {board.order_guide.quick_note}</p>
+                <p>택배: {board.order_guide.parcel_note}</p>
+              </div>
+              <div className="cutoff-grid compact">
+                {cutoffWindows.map((cutoff) => (
+                  <article key={cutoff.fulfillment_type} className="cutoff-card">
+                    <p className="cutoff-card-label">{cutoff.label}</p>
+                    <strong>{cutoff.cutoff_note}</strong>
+                  </article>
+                ))}
+              </div>
+            </>
+          ) : null}
         </SectionCard>
 
         <SectionCard title="주문서 남기기" subtitle="한 주문서 안에서 여러 품목을 함께 담으실 수 있어요.">
-          <div className="starter-preset-panel">
-            <div className="starter-preset-head">
-              <div>
-                <strong>처음 주문이시라면 추천 조합부터 시작해보세요</strong>
-                <p>가장 많이 선택되는 주문 흐름과 손질 방식을 한 번에 먼저 맞춰드릴게요.</p>
+            <div className="starter-preset-panel">
+              <div className="starter-preset-head">
+                <div>
+                  <strong>자주 고르는 주문 방식</strong>
+                  <p>가장 많이 쓰는 조합만 먼저 골라 시작하시면 돼요.</p>
+                </div>
+                <span className="mini-pill">확인 연락 보통 10~20분 내</span>
               </div>
-              <span className="mini-pill">확인 연락 보통 10~20분 내</span>
-            </div>
-            <div className="choice-grid three">
-              {orderStarterPresets.map((preset) => (
-                <button
-                  key={preset.id}
+              <div className="choice-grid two starter-choice-grid">
+                {orderStarterPresets.map((preset) => (
+                  <button
+                    key={preset.id}
                   type="button"
                   className={`choice-card${
                     form.order_flow === preset.orderFlow && form.fulfillment_type === preset.fulfillmentType

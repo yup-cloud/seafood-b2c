@@ -85,20 +85,31 @@ export function CustomerOrderItemCard({
         <label className="field-block">
           <span>{orderFlow === "same_day" ? "오늘 시세 품목 선택" : "예약 희망 품목명"}</span>
           {orderFlow === "same_day" ? (
-            <select
-              value={item.item_name}
-              onChange={(event) => onUpdate(item.id, "item_name", event.target.value)}
-              required
-            >
-              <option value="">오늘 시세에서 품목 고르기</option>
-              {boardItems.map((boardItem) => (
-                <option key={boardItem.id ?? boardItem.item_name} value={boardItem.item_name}>
-                  {boardItem.item_name}
-                  {boardItem.size_band ? ` · ${boardItem.size_band}` : ""}
-                  {boardItem.unit_price ? ` · ${formatCurrency(boardItem.unit_price)}/kg` : ""}
-                </option>
-              ))}
-            </select>
+            <div className="board-item-picker">
+              {boardItems.map((boardItem) => {
+                const isSelected = item.item_name === boardItem.item_name;
+
+                return (
+                  <button
+                    key={boardItem.id ?? boardItem.item_name}
+                    type="button"
+                    className={`board-item-card${isSelected ? " active" : ""}`}
+                    onClick={() => onUpdate(item.id, "item_name", boardItem.item_name)}
+                  >
+                    <div className="board-item-card-head">
+                      <strong>{boardItem.item_name}</strong>
+                      <StatusBadge value={boardItem.sale_status} />
+                    </div>
+                    <p>
+                      {boardItem.origin_label ?? "원산지 확인"} · {boardItem.size_band ?? "중량 확인"}
+                    </p>
+                    <span>
+                      {boardItem.unit_price ? `${formatCurrency(boardItem.unit_price)}/kg` : "가격 확인"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           ) : (
             <input
               list="item-options"
