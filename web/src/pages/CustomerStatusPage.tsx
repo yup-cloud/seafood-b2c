@@ -17,6 +17,7 @@ export function CustomerStatusPage() {
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const hasDirectLinkToken = Boolean(searchParams.get("token"));
+  const isSubmittedView = searchParams.get("submitted") === "1";
 
   useEffect(() => {
     setOrderNoInput(searchParams.get("orderNo") ?? "");
@@ -132,6 +133,14 @@ export function CustomerStatusPage() {
           <p className="page-description">금액 안내, 입금 확인, 준비 상태를 한 화면에서 확인하실 수 있어요.</p>
         </div>
       </section>
+
+      {isSubmittedView ? (
+        <section className="order-success-hero">
+          <p>주문서가 접수됐습니다</p>
+          <strong>{searchParams.get("orderNo") ?? order?.order_no ?? "주문번호 확인 중"}</strong>
+          <span>이 번호로 금액 안내, 입금 확인, 준비 상태를 다시 조회할 수 있습니다.</span>
+        </section>
+      ) : null}
 
       <SectionCard title="주문번호 입력" subtitle="주문 후 안내받은 주문번호를 입력해주세요.">
         {hasDirectLinkToken ? (

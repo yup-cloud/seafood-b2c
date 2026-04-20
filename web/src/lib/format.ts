@@ -77,8 +77,8 @@ export function formatStatusLabel(value: string): string {
     parcel_waiting: "택배 발송 준비",
     parcel_sent: "택배 발송 완료",
     whole: "한 마리 전체",
-    half: "반마리 함께 주문",
-    half_request: "반마리 함께 주문",
+    half: "반마리 주문",
+    half_request: "반마리 주문",
     raw: "통손질",
     fillet: "포 뜨기",
     sashimi: "회 손질",
@@ -92,8 +92,8 @@ export function formatStatusLabel(value: string): string {
     express: "고속 택배",
     regular: "일반 택배",
     match_not_needed: "매칭 불필요",
-    matching_waiting: "반마리 같이 주문 찾는 중",
-    matching_pending: "반마리 같이 주문 찾는 중",
+    matching_waiting: "반마리 주문 매칭 중",
+    matching_pending: "반마리 주문 매칭 중",
     matched: "반마리 매칭 완료",
     cancelled: "주문 취소"
   };

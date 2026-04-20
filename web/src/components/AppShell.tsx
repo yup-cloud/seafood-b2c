@@ -4,7 +4,6 @@ import { grantAdminAccess } from "../lib/admin-access";
 
 const navigationItems = [
   { to: "/", label: "홈" },
-  { to: "/customer/half-order", label: "반마리 주문" },
   { to: "/customer/order", label: "주문하기" },
   { to: "/customer/status", label: "주문 확인" }
 ];
@@ -63,7 +62,7 @@ export function AppShell({ children }: PropsWithChildren) {
       </header>
       <main className="page-frame">{children}</main>
       <nav className="mobile-tabbar" aria-label="모바일 주요 메뉴">
-        {navigationItems.slice(0, 3).map((item) => (
+        {navigationItems.map((item) => (
           <NavLink
             key={`mobile-${item.to}`}
             to={item.to}
@@ -93,7 +92,7 @@ export function AppShell({ children }: PropsWithChildren) {
           >
             <p className="eyebrow-text">운영자 전용</p>
             <h2 className="access-title">운영 화면 입장</h2>
-            <p className="access-body">운영 PIN만 입력하시면 바로 관리자 화면으로 이동합니다.</p>
+            <p className="access-body">운영 PIN 6자리를 입력하면 바로 관리자 화면으로 이동합니다.</p>
             <form className="stack-form" onSubmit={handleAccessSubmit}>
               <label className="field-block">
                 <span>운영 PIN</span>
@@ -103,7 +102,7 @@ export function AppShell({ children }: PropsWithChildren) {
                   inputMode="numeric"
                   value={accessToken}
                   onChange={(event) => setAccessToken(event.target.value)}
-                  placeholder="운영자 PIN 또는 토큰 입력"
+                  placeholder="000000"
                 />
               </label>
               {accessError ? <p className="helper-text access-error">{accessError}</p> : null}

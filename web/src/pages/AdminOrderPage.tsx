@@ -27,6 +27,15 @@ interface FulfillmentFormState {
   packingNote: string;
 }
 
+const fulfillmentStatusOptions = [
+  { value: "pickup_waiting", label: "픽업 대기" },
+  { value: "quick_waiting", label: "퀵 대기" },
+  { value: "quick_sent", label: "퀵 발송" },
+  { value: "parcel_waiting", label: "택배 대기" },
+  { value: "parcel_sent", label: "택배 발송" },
+  { value: "pickup_done", label: "픽업 완료" }
+];
+
 export function AdminOrderPage() {
   const { orderId = "" } = useParams();
   const [order, setOrder] = useState<AdminOrderDetail>(demoAdminOrderDetail);
@@ -155,6 +164,44 @@ export function AdminOrderPage() {
     await reloadOrder();
   }
 
+  async function handleQuickPaymentConfirm() {
+    if (mode === "demo") {
+      setNotice("데모 모드에서는 실제 입금 확인이 저장되지 않습니다. API 서버 연결 후 바로 반영됩니다.");
+      return;
+    }
+
+    const amount = Number(paymentForm.confirmedAmount || order.quote?.final_amount || 0);
+    if (!amount) {
+      setNotice("확인 금액이 비어 있습니다. 먼저 최종 금액을 입력해주세요.");
+      return;
+    }
+
+    await api.confirmPayment(orderId, amount, paymentForm.note || "운영자 빠른 확인");
+    setNotice("입금 확인을 반영하고 손질 준비 단계로 넘겼습니다.");
+    await reloadOrder();
+  }
+
+  async function handleQuickFulfillment(fulfillmentStatus: string) {
+    setFulfillmentForm((current) => ({
+      ...current,
+      fulfillmentStatus
+    }));
+
+    if (mode === "demo") {
+      setNotice(`${formatStatusLabel(fulfillmentStatus)} 상태로 바꾸는 빠른 처리 버튼입니다. API 서버 연결 후 저장됩니다.`);
+      return;
+    }
+
+    await api.updateFulfillment(orderId, {
+      fulfillment_status: fulfillmentStatus,
+      fulfillment_subtype: fulfillmentForm.fulfillmentSubtype || undefined,
+      parcel_tracking_no: fulfillmentForm.parcelTrackingNo || undefined,
+      packing_note: fulfillmentForm.packingNote || undefined
+    });
+    setNotice(`${formatStatusLabel(fulfillmentStatus)} 상태로 저장했습니다.`);
+    await reloadOrder();
+  }
+
   return (
     <div className="page-content">
       <section className="page-hero compact">
@@ -173,6 +220,26 @@ export function AdminOrderPage() {
       </section>
 
       {notice ? <div className="banner-notice">{notice}</div> : null}
+
+      <SectionCard title="운영 빠른 처리" subtitle="현장에서 가장 많이 누르는 입금 확인과 출고 상태만 크게 분리했습니다.">
+        <div className="quick-admin-grid">
+          <button type="button" className="quick-admin-button primary" onClick={handleQuickPaymentConfirm}>
+            <strong>입금 확인</strong>
+            <span>{formatCurrency(paymentForm.confirmedAmount || order.quote?.final_amount)} 확인</span>
+          </button>
+          {fulfillmentStatusOptions.map((status) => (
+            <button
+              key={status.value}
+              type="button"
+              className={`quick-admin-button${fulfillmentForm.fulfillmentStatus === status.value ? " active" : ""}`}
+              onClick={() => void handleQuickFulfillment(status.value)}
+            >
+              <strong>{status.label}</strong>
+              <span>바로 상태 변경</span>
+            </button>
+          ))}
+        </div>
+      </SectionCard>
 
       <div className="split-layout admin-detail-layout">
         <div className="stacked-cards">
@@ -305,12 +372,11 @@ export function AdminOrderPage() {
               <label className="field-block">
                 <span>출고 상태</span>
                 <select value={fulfillmentForm.fulfillmentStatus} onChange={(event) => setFulfillmentForm((current) => ({ ...current, fulfillmentStatus: event.target.value }))}>
-                  <option value="pickup_waiting">pickup_waiting</option>
-                  <option value="quick_waiting">quick_waiting</option>
-                  <option value="quick_sent">quick_sent</option>
-                  <option value="parcel_waiting">parcel_waiting</option>
-                  <option value="parcel_sent">parcel_sent</option>
-                  <option value="pickup_done">pickup_done</option>
+                  {fulfillmentStatusOptions.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
                 </select>
               </label>
               <div className="form-grid two">

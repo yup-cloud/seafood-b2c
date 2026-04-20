@@ -6,7 +6,7 @@ export function resolveAdminAccessToken() {
 }
 
 export function resolveAdminAccessPin() {
-  return import.meta.env.VITE_ADMIN_ACCESS_PIN?.trim() || "758400";
+  return import.meta.env.VITE_ADMIN_ACCESS_PIN?.trim() || "000000";
 }
 
 export function hasAdminAccess() {

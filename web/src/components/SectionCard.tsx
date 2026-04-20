@@ -1,14 +1,16 @@
 import { PropsWithChildren, ReactNode } from "react";
 
 interface SectionCardProps extends PropsWithChildren {
+  id?: string;
+  className?: string;
   title: string;
   subtitle?: string;
   action?: ReactNode;
 }
 
-export function SectionCard({ title, subtitle, action, children }: SectionCardProps) {
+export function SectionCard({ id, className, title, subtitle, action, children }: SectionCardProps) {
   return (
-    <section className="section-card">
+    <section id={id} className={`section-card${className ? ` ${className}` : ""}`}>
       <div className="section-card-head">
         <div>
           <h3 className="section-card-title">{title}</h3>

@@ -16,6 +16,12 @@ import {
 
 type NoticeTemplate = "compact" | "detailed" | "reservation";
 
+const priceItemStatuses = [
+  { value: "available", label: "판매중" },
+  { value: "reserved_only", label: "예약문의" },
+  { value: "sold_out", label: "품절" }
+];
+
 export function AdminDashboardPage() {
   const [ordersResponse, setOrdersResponse] = useState<AdminOrdersResponse>(demoAdminOrders);
   const [reviewQueue, setReviewQueue] = useState<PaymentReviewItem[]>(demoPaymentReview);
@@ -121,6 +127,21 @@ export function AdminDashboardPage() {
         .slice(0, 3),
     [ordersResponse.orders]
   );
+  const matchAndReservationOrders = useMemo(
+    () =>
+      ordersResponse.orders
+        .filter((order) => order.match_status === "matching_waiting" || order.is_reservation)
+        .slice(0, 6),
+    [ordersResponse.orders]
+  );
+  const workQueueCount = waitingPaymentCount + prepCount + reviewQueue.length + fulfillments.length;
+
+  function scrollToAdminSection(sectionId: string) {
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
 
   async function handleCopyNotice() {
     try {
@@ -325,9 +346,9 @@ export function AdminDashboardPage() {
       <section className="page-hero compact">
         <div>
           <p className="eyebrow-text">관리자 대시보드</p>
-          <h1 className="page-title">당일 주문 운영 현황</h1>
+          <h1 className="page-title">오늘 운영은 여기서 끝내세요</h1>
           <p className="page-description">
-            금액 안내, 입금 확인, 손질 준비, 출고 상태까지 한 화면에서 빠르게 이어서 처리합니다.
+            시세표 등록, 주문 확인, 입금/출고 처리, 카톡 공지를 매일 같은 순서로 처리할 수 있게 정리했습니다.
           </p>
         </div>
         <div className="hero-pills">
@@ -341,16 +362,41 @@ export function AdminDashboardPage() {
         </div>
       </section>
 
+      <section className="admin-command-center">
+        <button type="button" className="admin-command-card primary" onClick={() => scrollToAdminSection("admin-price-input")}>
+          <span>1</span>
+          <strong>오늘 시세 올리기</strong>
+          <p>카톡 시세표를 붙여넣고 자동 추출합니다.</p>
+        </button>
+        <button type="button" className="admin-command-card" onClick={() => scrollToAdminSection("admin-match-queue")}>
+          <span>2</span>
+          <strong>반마리/예약 큐</strong>
+          <p>{matchAndReservationOrders.length}건 가능 여부 확인</p>
+        </button>
+        <button type="button" className="admin-command-card" onClick={() => scrollToAdminSection("admin-order-queue")}>
+          <span>3</span>
+          <strong>입금·출고 처리</strong>
+          <p>총 {workQueueCount}건 처리 흐름 확인</p>
+        </button>
+        <button type="button" className="admin-command-card" onClick={() => scrollToAdminSection("admin-kakao-notice")}>
+          <span>4</span>
+          <strong>카톡 공지 복사</strong>
+          <p>시세 반영 후 공지 문구를 바로 복사합니다.</p>
+        </button>
+      </section>
+
       <section className="metric-grid">
-        <MetricCard label="오늘 주문" value={`${ordersResponse.orders.length}건`} hint="검색 결과 기준" />
-        <MetricCard label="미입금" value={`${waitingPaymentCount}건`} hint="출고 차단 대상" tone="amber" />
-        <MetricCard label="손질 준비" value={`${prepCount}건`} hint="입금 확인 완료" tone="green" />
-        <MetricCard label="예약 / 반절" value={`${reservationCount}건`} hint="예약 확보 및 매칭 확인" tone="red" />
+        <MetricCard label="오늘 접수" value={`${ordersResponse.orders.length}건`} hint="검색 결과 기준" />
+        <MetricCard label="입금 대기" value={`${waitingPaymentCount}건`} hint="먼저 안내 필요" tone="amber" />
+        <MetricCard label="준비 시작" value={`${prepCount}건`} hint="손질 순서 확인" tone="green" />
+        <MetricCard label="예약/반마리" value={`${reservationCount}건`} hint="확보·매칭 확인" tone="red" />
       </section>
 
       <SectionCard
+        id="admin-price-input"
+        className="admin-primary-section"
         title="오늘 시세 빠른 입력"
-        subtitle="카톡 공지 전체를 붙여넣으면 품목, 원산지, 중량대, kg당 가격을 자동으로 읽어드립니다."
+        subtitle="카톡 공지 전체를 그대로 붙여넣고 자동 추출만 누르세요. 틀린 품목만 아래에서 고치면 됩니다."
       >
         <div className="kakao-generator-card">
           <textarea
@@ -453,6 +499,18 @@ export function AdminDashboardPage() {
                   </select>
                 </label>
               </div>
+              <div className="status-button-row">
+                {priceItemStatuses.map((status) => (
+                  <button
+                    key={status.value}
+                    type="button"
+                    className={`status-mini-button${item.sale_status === status.value ? " active" : ""}`}
+                    onClick={() => handlePreviewItemChange(index, "sale_status", status.value)}
+                  >
+                    {status.label}
+                  </button>
+                ))}
+              </div>
               <label className="field-block compact">
                 <span>메모</span>
                 <input
@@ -483,6 +541,7 @@ export function AdminDashboardPage() {
       </SectionCard>
 
       <SectionCard
+        id="admin-kakao-notice"
         title="카톡 공지 생성기"
         subtitle="오늘 시세와 주문 가이드를 카톡에 올리기 좋은 문장으로 바로 만들어드립니다."
       >
@@ -528,6 +587,39 @@ export function AdminDashboardPage() {
       </SectionCard>
 
       <SectionCard
+        id="admin-match-queue"
+        title="반마리/예약 확인 큐"
+        subtitle="반마리 매칭, 예약 품목 확보처럼 고객 이탈이 빨리 생기는 주문만 따로 모았습니다."
+      >
+        <div className="support-grid compact-grid">
+          {matchAndReservationOrders.length ? (
+            matchAndReservationOrders.map((order) => (
+              <div key={order.id} className="support-card match-queue-card">
+                <div className="summary-bar">
+                  <strong>{order.order_no}</strong>
+                  <StatusBadge value={order.match_status} />
+                </div>
+                <p>
+                  {order.customer_name} · {order.item_summary ?? "품목 확인 필요"}
+                </p>
+                <div className="match-queue-tags">
+                  {order.is_reservation ? <span>예약</span> : null}
+                  {order.match_status === "matching_waiting" ? <span>반마리</span> : null}
+                  <span>{formatStatusLabel(order.fulfillment_type)}</span>
+                </div>
+                <Link className="primary-button compact-button" to={`/admin/orders/${order.id}`}>
+                  가능 여부 처리
+                </Link>
+              </div>
+            ))
+          ) : (
+            <div className="empty-order-card">현재 확인 대기 중인 반마리/예약 주문이 없습니다.</div>
+          )}
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        id="admin-priority-orders"
         title="지금 먼저 보면 좋은 주문"
         subtitle="입금, 손질, 반마리 매칭 상태를 기준으로 우선 순위를 먼저 추천해드릴게요."
       >
@@ -562,7 +654,7 @@ export function AdminDashboardPage() {
         </div>
       </SectionCard>
 
-      <div className="split-layout admin-layout">
+      <div id="admin-order-queue" className="split-layout admin-layout">
         <SectionCard title="주문 목록" subtitle="지금 가장 먼저 처리해야 할 주문">
           <div className="table-wrap">
             <table className="data-table">

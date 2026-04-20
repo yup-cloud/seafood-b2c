@@ -75,6 +75,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`: 단계별 구현 로드맵
 - `docs/PRODUCT_BACKLOG.md`: 우선순위 기반 기능 백로그
 - `docs/KAKAOTALK_INSIGHTS.md`: 카카오톡 대화 기반 현장 요구 분석
+- `docs/KAKAOTALK_CORE_FEATURES_20260420.md`: 2026-04-20 카톡 로그 기반 소비자/운영자 핵심 기능 재정의
 - `docs/STATE_DICTIONARY.md`: 주문/입금/출고/매칭 상태 사전
 - `docs/DB_SCHEMA.md`: PostgreSQL 기준 DB 스키마 명세
 - `docs/API_SPEC.md`: 고객용/관리자용 API 명세
