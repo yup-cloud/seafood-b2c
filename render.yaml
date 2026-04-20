@@ -15,7 +15,7 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: STORE_NAME
-        value: 오늘바다 데모점
+        value: 데모수산
       - key: STORE_PRIMARY_PHONE
         value: 010-1234-5678
       - key: STORE_SECONDARY_PHONE

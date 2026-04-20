@@ -32,7 +32,7 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: requireNumber("PORT", 4000),
   databaseUrl: requireString("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/seafood_b2c"),
-  storeName: requireString("STORE_NAME", "오늘바다 데모점"),
+  storeName: requireString("STORE_NAME", "데모수산"),
   storePrimaryPhone: requireString("STORE_PRIMARY_PHONE", "010-1234-5678"),
   storeSecondaryPhone: requireString("STORE_SECONDARY_PHONE", "010-2345-6789"),
   storeBankName: optionalString("STORE_BANK_NAME", "신한은행"),

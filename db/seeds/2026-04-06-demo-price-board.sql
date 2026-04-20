@@ -8,14 +8,14 @@ with target_store as (
 )
 update stores
 set
-  name = '참조은수산',
-  phone_primary = '010-3786-7555',
-  phone_secondary = '010-7584-0094',
-  address_line1 = '노량진수산시장 남5문 선어 80,81호',
-  address_line2 = '방문 포장비 없음 · 진공포장 무료',
-  bank_name = '신한은행',
-  bank_account = '110-165-872666',
-  bank_holder = '김태이',
+  name = '데모수산',
+  phone_primary = '010-0000-0000',
+  phone_secondary = '010-1111-2222',
+  address_line1 = '수산시장 데모동 00호',
+  address_line2 = '방문 포장비 없음 · 필렛 진공포장 가능',
+  bank_name = '데모은행',
+  bank_account = '000-0000-0000',
+  bank_holder = '데모수산',
   business_hours_note = '월~금 05:00~18:00 / 토 05:00~19:00 / 일 07:00~17:00',
   updated_at = now()
 where id in (select id from target_store);
@@ -37,7 +37,7 @@ upserted_batch as (
   select
     id,
     date '2026-04-06',
-    '2026-04-06 참조은수산 시세표',
+    '2026-04-06 데모수산 시세표',
     'published',
     now()
   from target_store
