@@ -4,7 +4,7 @@ import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { demoOrderOptions, demoOrderResult, demoPriceBoard, demoStore } from "../data/demo";
 import { api } from "../lib/api";
-import { formatCurrency, formatStatusLabel } from "../lib/format";
+import { formatCurrency, formatItemName, formatItemNote, formatStatusLabel } from "../lib/format";
 import { OrderFormOptions, PriceBoardItem, PriceBoardResponse, PublicOrderPayload, StoreInfo } from "../types";
 
 interface OrderFormState {
@@ -48,9 +48,12 @@ const orderSteps = [
 ];
 
 const cutTypeLabels: Record<string, string> = {
-  whole: "원물",
-  fillet: "필렛",
+  whole: "원물 그대로",
+  raw: "원물 그대로",
+  fillet: "포 뜨기",
   sashimi: "회 손질",
+  round: "원물 그대로",
+  steak: "토막 손질",
   masukawa: "마스까와",
   sekkoshi: "세꼬시"
 };
@@ -134,7 +137,7 @@ function formatPriceRange(min: number, max: number) {
 function buildSelectedItem(boardItem: PriceBoardItem, quantity: number, cutType = "fillet"): SelectedOrderItem {
   return {
     id: makeItemId(),
-    item_name: boardItem.item_name,
+    item_name: formatItemName(boardItem.item_name),
     origin_label: boardItem.origin_label,
     size_band: boardItem.size_band,
     unit_price: boardItem.unit_price,
@@ -148,7 +151,7 @@ function buildSelectedItem(boardItem: PriceBoardItem, quantity: number, cutType 
 function buildCustomItem(itemName: string, quantity: number): SelectedOrderItem {
   return {
     id: makeItemId(),
-    item_name: itemName,
+    item_name: formatItemName(itemName),
     origin_label: null,
     size_band: null,
     unit_price: null,
@@ -289,7 +292,9 @@ export function CustomerOrderPage() {
     }));
 
     if (presetItem) {
-      const boardItem = board.items.find((item) => item.item_name === presetItem);
+      const boardItem = board.items.find(
+        (item) => item.item_name === presetItem || formatItemName(item.item_name) === formatItemName(presetItem)
+      );
       setItems([
         boardItem
           ? buildSelectedItem(boardItem, halfRequested ? 0.5 : 1)
@@ -298,7 +303,7 @@ export function CustomerOrderPage() {
       setCurrentStep(1);
     }
 
-    setSubmitMessage("품목을 담아두었습니다. 손질, 받는 방법, 연락처만 확인해주세요.");
+    setSubmitMessage("품목을 담았습니다. 손질 방식, 수령 방식, 연락처를 확인해 주세요.");
     setSearchParams({}, { replace: true });
   }, [board.items, searchParams, setSearchParams]);
 
@@ -333,7 +338,7 @@ export function CustomerOrderPage() {
           requested_cut_type: item.requested_cut_type === "sashimi" ? "fillet" : item.requested_cut_type
         }))
       );
-      setSubmitMessage("택배는 회 손질 접수가 어려워 필렛 기준으로 안내됩니다.");
+      setSubmitMessage("택배는 회 손질 접수가 어려워 포 뜨기 기준으로 안내됩니다.");
     } else if (key !== "fulfillment_type") {
       setSubmitMessage("");
     } else {
@@ -352,11 +357,12 @@ export function CustomerOrderPage() {
 
   function addBoardItem(boardItem: PriceBoardItem) {
     if (boardItem.sale_status === "sold_out") {
-      setSubmitMessage("품절 품목은 바로 주문할 수 없습니다. 예약 주문으로 문의를 남겨주세요.");
+      setSubmitMessage("품절 품목은 바로 주문할 수 없습니다. 예약 주문으로 문의해 주세요.");
       return;
     }
     setItems((current) => {
-      const existing = current.find((item) => item.item_name === boardItem.item_name);
+      const displayName = formatItemName(boardItem.item_name);
+      const existing = current.find((item) => item.item_name === displayName);
       if (!existing) return [...current, buildSelectedItem(boardItem, unitQuantity)];
       return current.map((item) =>
         item.id === existing.id
@@ -370,7 +376,7 @@ export function CustomerOrderPage() {
   function addReservationItem() {
     const trimmedName = reservationItemName.trim();
     if (!trimmedName) {
-      setSubmitMessage("예약으로 찾을 품목명을 입력해주세요.");
+      setSubmitMessage("예약 문의할 품목명을 입력해 주세요.");
       return;
     }
     setItems((current) => [...current, buildCustomItem(trimmedName, unitQuantity)]);
@@ -389,7 +395,7 @@ export function CustomerOrderPage() {
 
   function handleCutChange(itemId: string, nextCutType: string) {
     if (form.fulfillment_type === "parcel" && nextCutType === "sashimi") {
-      setSubmitMessage("택배는 회 손질을 선택할 수 없습니다. 필렛 또는 원물로 접수해주세요.");
+      setSubmitMessage("택배는 회 손질을 선택할 수 없습니다. 포 뜨기 또는 원물 그대로 접수해 주세요.");
       return;
     }
     updateItem(itemId, { requested_cut_type: nextCutType });
@@ -397,24 +403,24 @@ export function CustomerOrderPage() {
   }
 
   function getStepError(stepIndex: number): string {
-    if (stepIndex === 0 && !items.length) return "주문할 어종을 먼저 담아주세요.";
+    if (stepIndex === 0 && !items.length) return "주문할 어종을 먼저 담아 주세요.";
     if (stepIndex === 1) {
-      if (!items.length) return "주문할 어종을 먼저 담아주세요.";
+      if (!items.length) return "주문할 어종을 먼저 담아 주세요.";
       if (items.some((item) => item.quantity < 0.5)) return "반마리는 0.5, 한 마리는 1 기준으로 접수됩니다.";
-      if (hasParcelSashimi) return "택배는 회 손질을 선택할 수 없습니다. 필렛 또는 원물로 바꿔주세요.";
+      if (hasParcelSashimi) return "택배는 회 손질을 선택할 수 없습니다. 포 뜨기 또는 원물 그대로 변경해 주세요.";
     }
     if (stepIndex === 2) {
-      if (!form.fulfillment_type) return "수령 방식을 선택해주세요.";
-      if (form.fulfillment_type === "parcel" && !form.fulfillment_subtype) return "택배 종류를 선택해주세요.";
-      if (hasParcelSashimi) return "택배는 회 손질을 선택할 수 없습니다. 필렛 또는 원물로 바꿔주세요.";
+      if (!form.fulfillment_type) return "수령 방식을 선택해 주세요.";
+      if (form.fulfillment_type === "parcel" && !form.fulfillment_subtype) return "택배 종류를 선택해 주세요.";
+      if (hasParcelSashimi) return "택배는 회 손질을 선택할 수 없습니다. 포 뜨기 또는 원물 그대로 변경해 주세요.";
     }
     if (stepIndex === 3) {
-      if (!form.customer_name.trim() || !form.customer_phone.trim()) return "주문자 성함과 연락처를 입력해주세요.";
-      if (!form.requested_date.trim() || !form.requested_time_slot.trim()) return "희망 날짜와 시간을 입력해주세요.";
+      if (!form.customer_name.trim() || !form.customer_phone.trim()) return "주문자 성함과 연락처를 입력해 주세요.";
+      if (!form.requested_date.trim() || !form.requested_time_slot.trim()) return "희망 날짜와 시간을 입력해 주세요.";
       if (isDelivery && (!form.receiver_name.trim() || !form.receiver_phone.trim()))
         return "퀵/택배는 수령인명과 수령인 연락처가 필요합니다.";
-      if (isDelivery && !form.address_line1.trim()) return "퀵/택배 받을 주소를 입력해주세요.";
-      if (form.fulfillment_type === "parcel" && !form.postal_code.trim()) return "택배는 우편번호가 필요합니다.";
+      if (isDelivery && !form.address_line1.trim()) return "퀵/택배 수령 주소를 입력해 주세요.";
+      if (form.fulfillment_type === "parcel" && !form.postal_code.trim()) return "택배 수령에는 우편번호가 필요합니다.";
     }
     if (stepIndex === 4) {
       const firstInvalid = findFirstInvalidStep();
@@ -489,7 +495,7 @@ export function CustomerOrderPage() {
         .filter(Boolean)
         .join("\n"),
       items: items.map((item) => ({
-        item_name: item.item_name,
+        item_name: formatItemName(item.item_name),
         origin_label: item.origin_label,
         size_band: item.size_band,
         quantity: item.quantity,
@@ -575,7 +581,7 @@ export function CustomerOrderPage() {
               {form.purchase_unit === "half_request" ? (
                 <div className="order-warning-panel">
                   <strong>반마리 주문 안내</strong>
-                  <p>반마리는 매칭 여부를 먼저 확인한 뒤 진행합니다. 접수 후 가능 여부를 먼저 안내드릴게요.</p>
+                  <p>반마리는 매칭 여부를 먼저 확인한 뒤 진행합니다. 접수 후 가능 여부를 안내합니다.</p>
                 </div>
               ) : null}
             </div>
@@ -595,14 +601,16 @@ export function CustomerOrderPage() {
                 <span>
                   누르면 바로 주문서에 담깁니다.
                   {form.purchase_unit === "half_request"
-                    ? " 반마리 단위로 담깁니다."
+                    ? " 반마리 단위로 담습니다."
                     : " 이미 담긴 품목은 한 번 더 누르면 수량이 늘어납니다."}
                 </span>
               </div>
               <div className="market-item-grid">
                 {board.items.length ? (
                   board.items.map((item) => {
-                    const inCart = items.find((i) => i.item_name === item.item_name);
+                    const displayName = formatItemName(item.item_name);
+                    const displayNote = formatItemNote(item.note);
+                    const inCart = items.find((i) => i.item_name === displayName);
                     return (
                       <button
                         key={item.id ?? item.item_name}
@@ -613,7 +621,7 @@ export function CustomerOrderPage() {
                         aria-pressed={Boolean(inCart)}
                       >
                         <span className="market-item-top">
-                          <strong>{item.item_name}</strong>
+                          <strong>{displayName}</strong>
                           <StatusBadge value={item.sale_status} />
                         </span>
                         <span>
@@ -625,8 +633,8 @@ export function CustomerOrderPage() {
                         </b>
                         {item.reservable_flag && item.sale_status === "reserved_only" && item.reservation_cutoff_note ? (
                           <small className="reservation-hint">📋 {item.reservation_cutoff_note}</small>
-                        ) : item.note ? (
-                          <small>{item.note}</small>
+                        ) : displayNote ? (
+                          <small>{displayNote}</small>
                         ) : null}
                         {inCart ? (
                           <span className="in-cart-indicator">✓ {inCart.quantity}마리 담김</span>
@@ -636,8 +644,8 @@ export function CustomerOrderPage() {
                   })
                 ) : (
                   <div className="empty-board-state">
-                    <p>🐟 오늘 시세가 아직 준비 중이에요.</p>
-                    <p>예약 주문 탭을 이용하시거나, 잠시 후 다시 확인해주세요.</p>
+                    <p>오늘 시세를 준비 중입니다.</p>
+                    <p>예약 주문으로 문의하거나 잠시 후 다시 확인해 주세요.</p>
                     <button
                       type="button"
                       className="secondary-button compact-button"
@@ -653,7 +661,7 @@ export function CustomerOrderPage() {
             <div className="order-stage-block">
               <div className="order-stage-note">
                 <strong>찾는 품목 직접 입력</strong>
-                <span>시세에 없는 품목도 문의명으로 남겨주시면 확인 후 안내드려요. 예: 돌돔 2kg급, 참치 뱃살</span>
+              <span>시세에 없는 품목도 문의명으로 남기면 확인 후 안내합니다. 예: 돌돔 2kg급, 참치 뱃살</span>
               </div>
               <div className="reservation-input-row">
                 <label className="field-block">
@@ -682,7 +690,7 @@ export function CustomerOrderPage() {
           {items.length > 0 && (
             <div className="cart-preview-bar">
               <span>
-                담은 품목: {items.map((i) => `${i.item_name} ×${i.quantity}`).join(", ")}
+                담은 품목: {items.map((i) => `${formatItemName(i.item_name)} ×${i.quantity}`).join(", ")}
               </span>
               <button
                 type="button"
@@ -707,8 +715,8 @@ export function CustomerOrderPage() {
           {/* ✅ 개선: 택배+회손질 조합 경고를 카드 상단에 명확히 표시 */}
           {hasParcelSashimi ? (
             <div className="order-warning-panel" role="alert">
-              <strong>⚠️ 택배는 회 손질을 선택할 수 없어요</strong>
-              <p>이동 시간이 있어 품질 보장이 어렵습니다. 회 손질 대신 필렛 또는 원물로 바꿔주세요.</p>
+              <strong>택배는 회 손질을 선택할 수 없습니다</strong>
+              <p>이동 시간이 있어 품질 유지가 어렵습니다. 회 손질 대신 포 뜨기 또는 원물 그대로 변경해 주세요.</p>
             </div>
           ) : null}
 
@@ -716,10 +724,11 @@ export function CustomerOrderPage() {
             {items.length ? (
               items.map((item) => {
                 const estimate = estimateItemTotal(item);
+                const displayName = formatItemName(item.item_name);
                 return (
                   <article key={item.id} className="selected-order-card">
                     <div>
-                      <strong>{item.item_name}</strong>
+                      <strong>{displayName}</strong>
                       <p>
                         {item.origin_label ?? "원산지 확인"} · {item.size_band ?? "크기 확인"}
                       </p>
@@ -742,7 +751,7 @@ export function CustomerOrderPage() {
                           onChange={(event) =>
                             updateItem(item.id, { quantity: Number(event.target.value || unitQuantity) })
                           }
-                          aria-label={`${item.item_name} 수량`}
+                          aria-label={`${displayName} 수량`}
                         />
                       </label>
                       <label>
@@ -750,7 +759,7 @@ export function CustomerOrderPage() {
                         <select
                           value={item.requested_cut_type}
                           onChange={(event) => handleCutChange(item.id, event.target.value)}
-                          aria-label={`${item.item_name} 손질 방법`}
+                          aria-label={`${displayName} 손질 방법`}
                         >
                           {cutTypes.map((cutType) => {
                             const disabled = form.fulfillment_type === "parcel" && cutType === "sashimi";
@@ -767,7 +776,7 @@ export function CustomerOrderPage() {
                         type="button"
                         className="text-danger-button"
                         onClick={() => removeItem(item.id)}
-                        aria-label={`${item.item_name} 삭제`}
+                        aria-label={`${displayName} 삭제`}
                       >
                         삭제
                       </button>
@@ -791,7 +800,7 @@ export function CustomerOrderPage() {
 
           <div className="order-warning-panel">
             <strong>손질 선택 기준</strong>
-            <p>바로 드실 예정이면 회 손질, 이동이나 보관이 있으면 필렛을 권장합니다. 택배는 필렛 또는 원물로 접수해주세요.</p>
+            <p>바로 드실 예정이면 회 손질, 이동이나 보관이 있으면 포 뜨기를 권장합니다. 택배는 포 뜨기 또는 원물 그대로 접수해 주세요.</p>
           </div>
         </SectionCard>
       );
@@ -837,7 +846,7 @@ export function CustomerOrderPage() {
               </label>
               <div className="order-warning-panel">
                 <strong>택배 손질 제한</strong>
-                <p>택배는 이동 시간이 있어 회 손질 대신 필렛 또는 원물 접수를 권장합니다.</p>
+                <p>택배는 이동 시간이 있어 회 손질 대신 포 뜨기 또는 원물 그대로 접수를 권장합니다.</p>
               </div>
             </div>
           ) : null}
@@ -858,7 +867,7 @@ export function CustomerOrderPage() {
     // ─────────────────────────────────────────
     if (currentStep === 3) {
       return (
-        <SectionCard title="4. 연락처/수령 정보" subtitle="정확한 연락처를 입력해주세요. 금액 안내와 수령에 꼭 필요한 정보입니다.">
+          <SectionCard title="4. 연락처/수령 정보" subtitle="금액 안내와 수령에 필요한 정보를 정확히 입력해 주세요.">
           <div className="form-grid two">
             <label className={`field-block${touched.customer_name && !form.customer_name.trim() ? " has-error" : ""}`}>
               <span>주문자 성함 <span className="required-mark">*</span></span>
@@ -870,8 +879,8 @@ export function CustomerOrderPage() {
                 autoComplete="name"
                 aria-required="true"
               />
-              {fieldError("customer_name", "성함을 입력해주세요.") ? (
-                <span className="field-error" role="alert">{fieldError("customer_name", "성함을 입력해주세요.")}</span>
+              {fieldError("customer_name", "성함을 입력해 주세요.") ? (
+                <span className="field-error" role="alert">{fieldError("customer_name", "성함을 입력해 주세요.")}</span>
               ) : null}
             </label>
             <label className={`field-block${touched.customer_phone && !form.customer_phone.trim() ? " has-error" : ""}`}>
@@ -885,8 +894,8 @@ export function CustomerOrderPage() {
                 autoComplete="tel"
                 aria-required="true"
               />
-              {fieldError("customer_phone", "연락처를 입력해주세요.") ? (
-                <span className="field-error" role="alert">{fieldError("customer_phone", "연락처를 입력해주세요.")}</span>
+              {fieldError("customer_phone", "연락처를 입력해 주세요.") ? (
+                <span className="field-error" role="alert">{fieldError("customer_phone", "연락처를 입력해 주세요.")}</span>
               ) : null}
             </label>
           </div>
@@ -922,8 +931,8 @@ export function CustomerOrderPage() {
                 <option value="오후 5시 전후" />
                 <option value="저녁 7시 전후" />
               </datalist>
-              {fieldError("requested_time_slot", "희망 시간을 입력해주세요.") ? (
-                <span className="field-error" role="alert">{fieldError("requested_time_slot", "희망 시간을 입력해주세요.")}</span>
+              {fieldError("requested_time_slot", "희망 시간을 입력해 주세요.") ? (
+                <span className="field-error" role="alert">{fieldError("requested_time_slot", "희망 시간을 입력해 주세요.")}</span>
               ) : null}
             </label>
           </div>
@@ -940,8 +949,8 @@ export function CustomerOrderPage() {
                     placeholder="수령인 이름"
                     autoComplete="name"
                   />
-                  {fieldError("receiver_name", "수령인명을 입력해주세요.") ? (
-                    <span className="field-error" role="alert">{fieldError("receiver_name", "수령인명을 입력해주세요.")}</span>
+                  {fieldError("receiver_name", "수령인명을 입력해 주세요.") ? (
+                    <span className="field-error" role="alert">{fieldError("receiver_name", "수령인명을 입력해 주세요.")}</span>
                   ) : null}
                 </label>
                 <label className={`field-block${touched.receiver_phone && !form.receiver_phone.trim() ? " has-error" : ""}`}>
@@ -954,8 +963,8 @@ export function CustomerOrderPage() {
                     inputMode="tel"
                     autoComplete="tel"
                   />
-                  {fieldError("receiver_phone", "수령인 연락처를 입력해주세요.") ? (
-                    <span className="field-error" role="alert">{fieldError("receiver_phone", "수령인 연락처를 입력해주세요.")}</span>
+                  {fieldError("receiver_phone", "수령인 연락처를 입력해 주세요.") ? (
+                    <span className="field-error" role="alert">{fieldError("receiver_phone", "수령인 연락처를 입력해 주세요.")}</span>
                   ) : null}
                 </label>
               </div>
@@ -971,8 +980,8 @@ export function CustomerOrderPage() {
                     maxLength={5}
                     autoComplete="postal-code"
                   />
-                  {fieldError("postal_code", "우편번호를 입력해주세요.") ? (
-                    <span className="field-error" role="alert">{fieldError("postal_code", "우편번호를 입력해주세요.")}</span>
+                  {fieldError("postal_code", "우편번호를 입력해 주세요.") ? (
+                    <span className="field-error" role="alert">{fieldError("postal_code", "우편번호를 입력해 주세요.")}</span>
                   ) : null}
                 </label>
               ) : null}
@@ -985,8 +994,8 @@ export function CustomerOrderPage() {
                   placeholder="도로명 주소"
                   autoComplete="street-address"
                 />
-                {fieldError("address_line1", "주소를 입력해주세요.") ? (
-                  <span className="field-error" role="alert">{fieldError("address_line1", "주소를 입력해주세요.")}</span>
+                {fieldError("address_line1", "주소를 입력해 주세요.") ? (
+                  <span className="field-error" role="alert">{fieldError("address_line1", "주소를 입력해 주세요.")}</span>
                 ) : null}
               </label>
               <label className="field-block">
@@ -1006,7 +1015,7 @@ export function CustomerOrderPage() {
             <textarea
               value={form.customer_request}
               onChange={(event) => updateField("customer_request", event.target.value)}
-              placeholder="예: 뼈도 같이 주세요. 4시 전에 받고 싶어요."
+              placeholder="예: 뼈도 함께 포장해 주세요. 4시 전 수령을 희망합니다."
             />
           </label>
 
@@ -1018,7 +1027,7 @@ export function CustomerOrderPage() {
               placeholder="주문자명과 다를 경우 입력 (선택)"
               autoComplete="name"
             />
-            <span className="field-hint">입금자명이 주문자와 다를 때만 입력해주세요.</span>
+            <span className="field-hint">입금자명이 주문자와 다를 때만 입력해 주세요.</span>
           </label>
         </SectionCard>
       );
@@ -1033,7 +1042,7 @@ export function CustomerOrderPage() {
           <article className="order-review-card">
             <span>주문 품목</span>
             <strong>{items.length}개 품목</strong>
-            <p>{items.map((item) => `${item.item_name} ${item.quantity}`).join(", ") || "품목 없음"}</p>
+            <p>{items.map((item) => `${formatItemName(item.item_name)} ${item.quantity}`).join(", ") || "품목 없음"}</p>
           </article>
           <article className="order-review-card">
             <span>수령 방식</span>
@@ -1080,15 +1089,15 @@ export function CustomerOrderPage() {
         </div>
 
         <div className="estimate-total-card">
-          <span>대략 총액</span>
+            <span>예상 총액</span>
           <strong>{estimates.itemRange.max > 0 ? formatPriceRange(estimates.totalMin, estimates.totalMax) : "품목 확인 후 안내"}</strong>
           <p>주문번호가 발급되면 주문 확인 화면에서 바로 진행 상태를 볼 수 있습니다.</p>
         </div>
 
         {/* ✅ 개선: 제출 전 최종 알림 안내 */}
         <div className="notice-panel">
-          <strong>접수 후 10~20분 안에 금액 안내를 드려요</strong>
-          <p>품목 상태와 손질 조건을 확인한 뒤 정확한 금액을 문자나 카톡으로 보내드립니다. 입금은 금액 확인 후 진행해주세요.</p>
+          <strong>접수 후 10~20분 안에 금액을 안내합니다</strong>
+          <p>품목 상태와 손질 조건을 확인한 뒤 정확한 금액을 문자나 카톡으로 안내합니다. 입금은 금액 확인 후 진행해 주세요.</p>
         </div>
       </SectionCard>
     );
@@ -1099,7 +1108,7 @@ export function CustomerOrderPage() {
       <section className="page-hero compact">
         <div>
           <p className="eyebrow-text">주문하기</p>
-          <h1 className="page-title">시세에서 고르고, 주문번호까지 바로 받으세요</h1>
+          <h1 className="page-title">시세에서 고르고, 주문번호까지 바로 확인하세요</h1>
           <p className="page-description">
             어종, 손질, 받는 방법만 순서대로 고르면 예상 금액과 함께 주문서가 완성됩니다.
           </p>

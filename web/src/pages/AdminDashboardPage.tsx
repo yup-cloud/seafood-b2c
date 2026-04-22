@@ -5,7 +5,7 @@ import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { demoAdminOrders, demoFulfillments, demoPaymentReview, demoPriceBoard, demoStore } from "../data/demo";
 import { api } from "../lib/api";
-import { formatCurrency, formatDate, formatSourceModeLabel, formatStatusLabel } from "../lib/format";
+import { formatCurrency, formatDate, formatItemName, formatItemNote, formatSourceModeLabel, formatStatusLabel } from "../lib/format";
 import {
   AdminOrdersResponse,
   FulfillmentQueueItem,
@@ -213,18 +213,18 @@ export function AdminDashboardPage() {
   async function handleCopyNotice() {
     try {
       await navigator.clipboard.writeText(noticeText);
-      setCopyMessage("카톡 공지 문구를 복사했어요. 바로 붙여넣어 올리시면 됩니다.");
+      setCopyMessage("카톡 공지 문구를 복사했습니다. 바로 붙여넣어 사용할 수 있습니다.");
     } catch {
-      setCopyMessage("자동 복사가 어려워 미리보기 문구를 직접 선택해 복사해주세요.");
+      setCopyMessage("자동 복사가 되지 않았습니다. 미리보기 문구를 직접 선택해 복사해 주세요.");
     }
   }
 
   async function handleCopyOrderGuide(orderNo: string, customerName: string, text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      setCopyMessage(`${orderNo} ${customerName} 고객 안내 문구를 복사했어요.`);
+      setCopyMessage(`${orderNo} ${customerName} 고객 안내 문구를 복사했습니다.`);
     } catch {
-      setCopyMessage("자동 복사가 어려워 화면의 안내 문구를 직접 복사해주세요.");
+      setCopyMessage("자동 복사가 되지 않았습니다. 화면의 안내 문구를 직접 복사해 주세요.");
     }
   }
 
@@ -243,8 +243,8 @@ export function AdminDashboardPage() {
     }));
     setParseMessage(
       parsed.items.length
-        ? `${parsed.items.length}개 품목을 추출했어요. 빠진 품목은 아래 미리보기에서 바로 확인해주세요.`
-        : "가격이 들어간 품목을 아직 찾지 못했어요. 카톡 공지 전체를 다시 붙여넣어 주세요."
+        ? `${parsed.items.length}개 품목을 추출했습니다. 빠진 품목은 아래 미리보기에서 확인해 주세요.`
+        : "가격이 들어간 품목을 찾지 못했습니다. 카톡 공지 전체를 다시 붙여넣어 주세요."
     );
   }
 
@@ -267,7 +267,7 @@ export function AdminDashboardPage() {
         if (field === "sale_status") {
           nextItem.sale_status = value;
         } else if (field === "item_name") {
-          nextItem.item_name = value;
+          nextItem.item_name = formatItemName(value);
         } else if (field === "origin_label") {
           nextItem.origin_label = value || null;
         } else if (field === "size_band") {
@@ -275,7 +275,7 @@ export function AdminDashboardPage() {
         } else if (field === "unit_price") {
           nextItem.unit_price = value || null;
         } else if (field === "note") {
-          nextItem.note = value || null;
+          nextItem.note = formatItemNote(value) || null;
         } else if (field === "reservation_cutoff_note") {
           nextItem.reservation_cutoff_note = value || null;
         }
@@ -312,7 +312,7 @@ export function AdminDashboardPage() {
     try {
       const previous = await api.getAdminPriceBoard(previousDate);
       if (!previous.items.length) {
-        setParseMessage("어제 시세가 아직 등록되지 않았어요. 카톡 시세표 붙여넣기로 시작해보세요.");
+        setParseMessage("어제 시세가 아직 등록되지 않았습니다. 카톡 시세표 붙여넣기로 시작해 주세요.");
         return;
       }
 
@@ -324,9 +324,9 @@ export function AdminDashboardPage() {
 
       setParsedPreview(previousBoard);
       setBoard(previousBoard);
-      setParseMessage("어제 시세를 불러왔어요. 바뀐 품목만 수정한 뒤 오늘 시세로 반영하시면 됩니다.");
+      setParseMessage("어제 시세를 불러왔습니다. 변경된 품목만 수정한 뒤 오늘 시세로 반영하면 됩니다.");
     } catch {
-      setParseMessage("어제 시세를 불러오지 못했어요. 카톡 시세표 붙여넣기 방식으로 진행해주세요.");
+      setParseMessage("어제 시세를 불러오지 못했습니다. 카톡 시세표 붙여넣기 방식으로 진행해 주세요.");
     } finally {
       setIsLoadingPreviousBoard(false);
     }
@@ -336,7 +336,7 @@ export function AdminDashboardPage() {
   function handleRequestApply() {
     const source = parsedPreview ?? (pricePaste.trim() ? parsePriceBoardNotice(pricePaste, getKoreaTodayDate()) : null);
     if (!source || !source.items.length) {
-      setParseMessage("먼저 카톡 시세표를 붙여넣고 자동 추출을 눌러주세요.");
+      setParseMessage("먼저 카톡 시세표를 붙여넣고 자동 추출을 눌러 주세요.");
       return;
     }
     setShowApplyConfirm(true);
@@ -353,7 +353,7 @@ export function AdminDashboardPage() {
           });
 
     if (!source.items.length) {
-      setParseMessage("먼저 카톡 시세표를 붙여넣고 자동 추출을 눌러주세요.");
+      setParseMessage("먼저 카톡 시세표를 붙여넣고 자동 추출을 눌러 주세요.");
       return;
     }
 
@@ -371,18 +371,18 @@ export function AdminDashboardPage() {
       const existingItems = boardResponse.items ?? [];
       const existingItemMap = new Map(
         existingItems.map((item) => [
-          normalizeBoardItemKey(item.item_name, item.origin_label, item.size_band),
+          normalizeBoardItemKey(formatItemName(item.item_name), item.origin_label, item.size_band),
           item
         ])
       );
       const parsedKeys = new Set<string>();
 
       for (const [index, item] of source.items.entries()) {
-        const itemKey = normalizeBoardItemKey(item.item_name, item.origin_label, item.size_band);
+        const itemKey = normalizeBoardItemKey(formatItemName(item.item_name), item.origin_label, item.size_band);
         parsedKeys.add(itemKey);
         const unitPriceNumber = item.unit_price ? Number(item.unit_price) : null;
         const payload = {
-          item_name: item.item_name,
+          item_name: formatItemName(item.item_name),
           origin_label: item.origin_label,
           size_band: item.size_band,
           unit_price: Number.isFinite(unitPriceNumber) ? unitPriceNumber : null,
@@ -390,7 +390,7 @@ export function AdminDashboardPage() {
           sale_status: item.sale_status,
           reservable_flag: item.reservable_flag,
           reservation_cutoff_note: item.reservation_cutoff_note ?? null,
-          note: item.note ?? null,
+          note: formatItemNote(item.note) || null,
           sort_order: (index + 1) * 10
         };
         const existing = existingItemMap.get(itemKey);
@@ -406,11 +406,12 @@ export function AdminDashboardPage() {
       }
 
       for (const item of existingItems) {
-        const itemKey = normalizeBoardItemKey(item.item_name, item.origin_label, item.size_band);
+        const itemKey = normalizeBoardItemKey(formatItemName(item.item_name), item.origin_label, item.size_band);
         if (!parsedKeys.has(itemKey) && item.id) {
+          const itemNote = formatItemNote(item.note);
           await api.patchAdminPriceBoardItem(item.id, {
             sale_status: "sold_out",
-            note: item.note ? `${item.note} / 이번 붙여넣기 기준 제외` : "이번 붙여넣기 기준 제외"
+            note: itemNote ? `${itemNote} / 이번 붙여넣기 기준 제외` : "이번 붙여넣기 기준 제외"
           });
         }
       }
@@ -418,10 +419,10 @@ export function AdminDashboardPage() {
       await api.publishAdminPriceBoard(batchId);
       setBoard(source);
       setParsedPreview(source);
-      setParseMessage("오늘 시세로 반영했어요. 관리자/고객 화면에 같은 내용이 보이도록 게시까지 완료했습니다.");
+      setParseMessage("오늘 시세로 반영했습니다. 관리자와 고객 화면에 같은 내용이 보이도록 게시가 완료되었습니다.");
       setMode("live");
     } catch {
-      setParseMessage("자동 반영 중 문제가 있어요. 먼저 자동 추출 결과를 확인하고 다시 시도해주세요.");
+      setParseMessage("자동 반영 중 문제가 발생했습니다. 자동 추출 결과를 확인한 뒤 다시 시도해 주세요.");
     } finally {
       setIsSavingBoard(false);
     }
@@ -437,7 +438,7 @@ export function AdminDashboardPage() {
             <>
               <strong>{(parsedPreview ?? board).items.length}개 품목</strong>이 고객 화면에 즉시 반영됩니다.
               기존 시세와 다른 품목은 자동으로 업데이트되고, 이번에 없는 품목은 품절로 처리됩니다.
-              반영 후에는 되돌리기 어려우니 미리보기를 한번 더 확인해주세요.
+              반영 후에는 되돌리기 어려우니 미리보기를 한 번 더 확인해 주세요.
             </>
           }
           confirmLabel="지금 반영하기"
@@ -583,7 +584,7 @@ export function AdminDashboardPage() {
                   type="button"
                   className="text-link danger"
                   onClick={() => handleRemovePreviewItem(index)}
-                  aria-label={`${item.item_name} 삭제`}
+                  aria-label={`${formatItemName(item.item_name)} 삭제`}
                 >
                   삭제
                 </button>
@@ -591,7 +592,7 @@ export function AdminDashboardPage() {
               <label className="field-block compact">
                 <span>품목명</span>
                 <input
-                  value={item.item_name}
+                  value={formatItemName(item.item_name)}
                   onChange={(event: ChangeEvent<HTMLInputElement>) =>
                     handlePreviewItemChange(index, "item_name", event.target.value)
                   }
@@ -656,7 +657,7 @@ export function AdminDashboardPage() {
               <label className="field-block compact">
                 <span>메모</span>
                 <input
-                  value={item.note ?? ""}
+                    value={formatItemNote(item.note)}
                   onChange={(event: ChangeEvent<HTMLInputElement>) =>
                     handlePreviewItemChange(index, "note", event.target.value)
                   }
@@ -694,7 +695,7 @@ export function AdminDashboardPage() {
             onClick={() => setNoticeTemplate("compact")}
           >
             <strong>짧은 공지</strong>
-            <span>핵심 시세와 주문 링크만 빠르게 올릴 때 좋아요.</span>
+            <span>핵심 시세와 주문 링크만 빠르게 올릴 때 사용합니다.</span>
           </button>
           <button
             type="button"
@@ -702,7 +703,7 @@ export function AdminDashboardPage() {
             onClick={() => setNoticeTemplate("detailed")}
           >
             <strong>상세 공지</strong>
-            <span>수령 방식과 주문 규칙까지 같이 안내할 때 좋아요.</span>
+            <span>수령 방식과 주문 규칙까지 함께 안내할 때 사용합니다.</span>
           </button>
           <button
             type="button"
@@ -710,14 +711,14 @@ export function AdminDashboardPage() {
             onClick={() => setNoticeTemplate("reservation")}
           >
             <strong>예약 강조 공지</strong>
-            <span>예약 품목과 마감 시간을 강조하고 싶을 때 좋아요.</span>
+            <span>예약 품목과 마감 시간을 강조할 때 사용합니다.</span>
           </button>
         </div>
         <div className="kakao-generator-card">
           <div className="summary-bar">
             <div>
               <strong>{formatDate(board.board_date)} 공지 미리보기</strong>
-              <span>현재 시세판 기준으로 자동 생성된 카톡용 문구예요.</span>
+              <span>현재 시세표 기준으로 자동 생성된 카톡용 문구입니다.</span>
             </div>
             <button type="button" className="primary-button compact-button" onClick={handleCopyNotice}>
               문구 복사하기
@@ -763,7 +764,7 @@ export function AdminDashboardPage() {
       <SectionCard
         id="admin-priority-orders"
         title="지금 먼저 보면 좋은 주문"
-        subtitle="입금, 손질, 반마리 매칭 상태를 기준으로 우선 순위를 먼저 추천해드릴게요."
+        subtitle="입금, 손질, 반마리 매칭 상태를 기준으로 우선순위를 정리합니다."
       >
         <div className="support-grid">
           {urgentOrders.map((order) => {
@@ -948,10 +949,12 @@ function parsePriceBoardNotice(text: string, fallbackDate: string): PriceBoardRe
     const sizeMatch = after.match(/\(([^)]+)\)/);
     const saleStatus = /품절|🚫/.test(line) ? "sold_out" : /예약판매|전날주문|예약/.test(line) ? "reserved_only" : "available";
     const reservableFlag = /예약|전날/.test(line);
-    const cleanedName = left
-      .replace(/^[S☆🐥🐧●♡@!~\s]+/u, "")
-      .replace(/\s{2,}/g, " ")
-      .trim();
+    const cleanedName = formatItemName(
+      left
+        .replace(/^[☆🐥🐧●♡@!~\s]+/u, "")
+        .replace(/\s{2,}/g, " ")
+        .trim()
+    );
 
     if (!cleanedName || /서비스요금|주문주셔야/.test(cleanedName)) {
       continue;
@@ -966,7 +969,7 @@ function parsePriceBoardNotice(text: string, fallbackDate: string): PriceBoardRe
       sale_status: saleStatus,
       reservable_flag: reservableFlag,
       reservation_cutoff_note: reservableFlag ? "예약 또는 전날 문의 필요" : "당일 문의 가능",
-      note: after.replace(/\(([^)]+)\)/, "").trim() || null
+      note: formatItemNote(after.replace(/\(([^)]+)\)/, "").trim()) || null
     });
   }
 
@@ -993,34 +996,34 @@ function getKoreaTodayDate() {
 
 function resolveUrgentReason(order: AdminOrdersResponse["orders"][number]) {
   if (order.payment_status === "unpaid") {
-    return "최종 금액 안내 후 미입금 상태라 다음 단계가 멈춰 있어요. 빠르게 확인 안내를 보내는 게 좋아요.";
+    return "최종 금액 안내 후 미입금 상태라 다음 단계가 멈춰 있습니다. 빠르게 확인 안내를 보내는 것이 좋습니다.";
   }
 
   if (order.match_status === "matching_waiting") {
-    return "반마리 또는 예약 매칭 대기 상태라 확인이 늦어지면 이탈 가능성이 커요.";
+    return "반마리 또는 예약 매칭 대기 상태라 확인이 늦어지면 이탈 가능성이 큽니다.";
   }
 
   if (order.order_status === "ready_for_prep") {
-    return "입금 확인이 끝난 주문이라 손질 준비 순서를 바로 잡아주는 게 좋아요.";
+    return "입금 확인이 완료된 주문입니다. 손질 준비 순서를 바로 지정하는 것이 좋습니다.";
   }
 
-  return "지금 처리 흐름을 한 번 더 확인해두면 안전한 주문이에요.";
+  return "처리 흐름을 한 번 더 확인하면 안전한 주문입니다.";
 }
 
 function buildOrderGuideMessage(order: AdminOrdersResponse["orders"][number]) {
   if (order.payment_status === "unpaid") {
-    return `[${order.order_no}] ${order.customer_name}님, 금액 안내가 완료되어 입금 확인 후 바로 준비를 시작할 수 있어요. 입금 후 이 메시지에 입금자명만 남겨주시면 더 빠르게 확인해드릴게요.`;
+    return `[${order.order_no}] ${order.customer_name}님, 금액 안내가 완료되었습니다. 입금 확인 후 바로 준비를 시작합니다. 입금 후 이 메시지에 입금자명을 남겨주시면 더 빠르게 확인할 수 있습니다.`;
   }
 
   if (order.match_status === "matching_waiting") {
-    return `[${order.order_no}] ${order.customer_name}님, 반마리/예약 매칭 여부를 확인 중이에요. 확인되는 대로 가능 여부와 금액을 먼저 안내드릴게요.`;
+    return `[${order.order_no}] ${order.customer_name}님, 반마리/예약 매칭 여부를 확인 중입니다. 확인되는 대로 가능 여부와 금액을 먼저 안내합니다.`;
   }
 
   if (order.order_status === "ready_for_prep") {
-    return `[${order.order_no}] ${order.customer_name}님, 입금 확인이 완료되어 지금 손질 준비에 들어가고 있어요. 준비가 끝나면 수령 방식에 맞춰 다시 안내드릴게요.`;
+    return `[${order.order_no}] ${order.customer_name}님, 입금 확인이 완료되어 손질 준비를 시작했습니다. 준비가 끝나면 수령 방식에 맞춰 다시 안내합니다.`;
   }
 
-  return `[${order.order_no}] ${order.customer_name}님, 주문 상태를 확인 중이며 변동이 있으면 바로 안내드릴게요.`;
+  return `[${order.order_no}] ${order.customer_name}님, 주문 상태를 확인 중입니다. 변동 사항이 있으면 바로 안내합니다.`;
 }
 
 function buildKakaoNotice(params: {
@@ -1038,11 +1041,11 @@ function buildKakaoNotice(params: {
         ? ` ${formatCurrency(item.unit_price)}${item.unit_label === "kg" ? "/kg" : ""}`
         : " 가격 문의";
       const reservation = item.reservable_flag && item.sale_status === "reserved_only" ? " (예약 문의)" : "";
-      return `- ${item.item_name}${size}${price}${reservation}`;
+      return `- ${formatItemName(item.item_name)}${size}${price}${reservation}`;
     });
   const soldOutItems = board.items
     .filter((item) => item.sale_status === "sold_out")
-    .map((item) => item.item_name);
+    .map((item) => formatItemName(item.item_name));
   const cutoffLines = (board.order_guide.cutoff_windows ?? []).map(
     (cutoff) => `- ${cutoff.label}: ${cutoff.cutoff_note}`
   );
@@ -1074,7 +1077,7 @@ function buildKakaoNotice(params: {
       .filter((item) => item.reservable_flag)
       .map((item) => {
         const cutoff = item.reservation_cutoff_note ? ` / ${item.reservation_cutoff_note}` : "";
-        return `- ${item.item_name}${cutoff}`;
+        return `- ${formatItemName(item.item_name)}${cutoff}`;
       });
 
     return [
@@ -1105,7 +1108,7 @@ function buildKakaoNotice(params: {
     soldOutItems.length ? "" : null,
     soldOutItems.length ? `오늘 품절: ${soldOutItems.join(", ")}` : null,
     "",
-    "주문 전 참고해주세요",
+    "주문 전 참고해 주세요",
     `- 픽업: ${board.order_guide.pickup_note}`,
     `- 퀵: ${board.order_guide.quick_note}`,
     `- 택배: ${board.order_guide.parcel_note}`,

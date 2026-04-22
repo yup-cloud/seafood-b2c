@@ -4,7 +4,7 @@ import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { demoPriceBoard, demoStore } from "../data/demo";
 import { api } from "../lib/api";
-import { formatCurrency, formatDate } from "../lib/format";
+import { formatCurrency, formatDate, formatItemName } from "../lib/format";
 import { PriceBoardResponse, StoreInfo } from "../types";
 
 export function HomePage() {
@@ -72,12 +72,11 @@ export function HomePage() {
             주문까지 편안해야 하니까
           </h1>
           <p className="hero-description">
-            당일 시세는 먼저 투명하게 보여드리고, 손질과 픽업, 퀵, 택배까지 요청하신 방식에
-            맞춰 정성껏 준비해드립니다.
+            당일 시세를 먼저 확인하고, 손질부터 픽업·퀵·택배까지 원하는 방식으로 주문할 수 있습니다.
           </p>
           <div className="inline-actions home-cta-row">
             <Link to="/customer/order" className="primary-button">
-              오늘 시세보고 주문
+              오늘 시세 보고 주문
             </Link>
             <Link to="/customer/status" className="secondary-button">
               내 주문 확인
@@ -99,7 +98,7 @@ export function HomePage() {
 
       <SectionCard
         title="오늘 주문 안내"
-        subtitle={`${formatDate(board.board_date)} 기준으로 바로 가능한 주문만 먼저 모아봤어요.`}
+        subtitle={`${formatDate(board.board_date)} 기준 주문 가능한 품목과 수령 안내입니다.`}
       >
         <div className="cutoff-grid">
           {cutoffWindows.map((cutoff) => (
@@ -112,11 +111,11 @@ export function HomePage() {
         <div className="trust-strip">
           <div>
             <strong>당일 주문</strong>
-            <p>{board.order_guide.expected_price_note ?? "당일 시세와 손질비, 운임비를 확인해 정확한 금액을 안내해드려요."}</p>
+            <p>{board.order_guide.expected_price_note ?? "당일 시세, 손질비, 운임을 확인한 뒤 정확한 금액을 안내합니다."}</p>
           </div>
           <div>
             <strong>예약 주문</strong>
-            <p>{board.order_guide.reservation_deposit_policy ?? "예약 주문은 확보 가능 여부를 먼저 확인한 뒤 진행해드려요."}</p>
+            <p>{board.order_guide.reservation_deposit_policy ?? "예약 주문은 확보 가능 여부를 먼저 확인한 뒤 진행합니다."}</p>
           </div>
         </div>
       </SectionCard>
@@ -132,7 +131,7 @@ export function HomePage() {
               board.items.map((item) => (
                 <div key={item.id ?? item.item_name} className="list-row">
                   <div>
-                    <strong>{item.item_name}</strong>
+                    <strong>{formatItemName(item.item_name)}</strong>
                     <p>
                       {item.origin_label ?? "원산지 미지정"} · {item.size_band ?? "규격 미지정"}
                     </p>
@@ -156,8 +155,8 @@ export function HomePage() {
               ))
             ) : (
               <div className="empty-board-state">
-                <p>🐟 오늘 시세를 준비 중이에요</p>
-                <p>잠시 후 다시 확인하시거나, 예약 주문으로 원하는 품목을 먼저 남겨두실 수 있어요.</p>
+                <p>오늘 시세를 준비 중입니다.</p>
+                <p>잠시 후 다시 확인하거나, 예약 주문으로 원하는 품목을 먼저 남길 수 있습니다.</p>
                 <Link to="/customer/order?flow=reservation" className="secondary-button compact-button">
                   예약 주문 남기기
                 </Link>
@@ -167,26 +166,26 @@ export function HomePage() {
         </SectionCard>
 
         <SectionCard
-          title="처음 주문이라면 이것만 보세요"
-          subtitle="복잡한 설명은 줄이고, 실제로 많이 물어보시는 내용만 남겼어요."
+          title="처음 주문할 때 확인할 내용"
+          subtitle="실제 문의가 많은 내용을 중심으로 간단히 정리했습니다."
         >
           <div className="stack-list">
             <div className="list-row">
               <div>
-                <strong>시세를 먼저 보고 주문해요</strong>
-                <p>오늘 기준 단가를 먼저 보고, 손질비와 운임은 주문 내용에 맞춰 따로 안내해드려요.</p>
+                <strong>시세를 먼저 확인합니다</strong>
+                <p>오늘 기준 단가를 확인한 뒤 주문할 수 있습니다. 손질비와 운임은 주문 내용에 맞춰 별도로 안내합니다.</p>
               </div>
             </div>
             <div className="list-row">
               <div>
-                <strong>주문번호로 진행 상황을 확인해요</strong>
-                <p>금액 안내부터 손질 준비, 출고 완료까지 주문 후에도 직접 확인하실 수 있어요.</p>
+                <strong>주문번호로 진행 상황을 확인합니다</strong>
+                <p>금액 안내부터 손질 준비, 출고 완료까지 주문 후에도 직접 확인할 수 있습니다.</p>
               </div>
             </div>
             <div className="list-row">
               <div>
-                <strong>픽업, 퀵, 택배 중에 고르세요</strong>
-                <p>오늘 드실지, 이동이 있는지에 따라 가장 무난한 수령 방식을 추천해드려요.</p>
+                <strong>픽업, 퀵, 택배 중 선택합니다</strong>
+                <p>당일 섭취 여부와 이동 거리에 따라 적합한 수령 방식을 선택할 수 있습니다.</p>
               </div>
             </div>
           </div>
@@ -197,7 +196,7 @@ export function HomePage() {
       {board.order_guide.processing_rules_summary.length > 0 && (
         <SectionCard
           title="손질 비용 안내"
-          subtitle="원물 가격 외에 추가되는 손질비 기준이에요. 주문 시 참고해주세요."
+          subtitle="원물 가격 외에 추가되는 손질비 기준입니다. 주문 전 참고해 주세요."
         >
           <div className="stack-list">
             {board.order_guide.processing_rules_summary.map((rule) => (
@@ -212,21 +211,21 @@ export function HomePage() {
       )}
 
       <SectionCard
-        title="처음 주문하시는 분이 가장 많이 물어보세요"
-        subtitle="실제 문의가 많은 질문만 먼저 짧게 정리했어요."
+        title="자주 묻는 질문"
+        subtitle="처음 주문할 때 자주 확인하는 내용을 짧게 정리했습니다."
       >
         <div className="support-grid">
           <div className="support-card">
             <strong>어떤 손질을 골라야 할지 모르겠어요</strong>
-            <p>처음 주문이면 필렛부터 시작하시면 가장 부담이 적고, 이동이나 보관도 편한 편이에요.</p>
+            <p>처음 주문한다면 포 뜨기를 권장합니다. 이동이나 보관이 비교적 편합니다.</p>
           </div>
           <div className="support-card">
             <strong>주문하면 언제 연락이 오나요?</strong>
-            <p>보통 주문서 확인 후 10~20분 안에 금액이나 진행 가능 여부를 먼저 안내드려요.</p>
+            <p>보통 주문서 확인 후 10~20분 안에 금액 또는 진행 가능 여부를 안내합니다.</p>
           </div>
           <div className="support-card">
             <strong>한 마리가 부담스러우면 어떻게 하나요?</strong>
-            <p>반마리 함께 주문으로 먼저 남겨주시면 가능한 품목은 확인 후 함께 맞춰드릴 수 있어요.</p>
+            <p>반마리 주문으로 남기면 가능한 품목을 확인한 뒤 매칭 가능 여부를 안내합니다.</p>
           </div>
         </div>
       </SectionCard>

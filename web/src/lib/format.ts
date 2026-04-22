@@ -46,6 +46,39 @@ export function formatCurrency(value: string | number | null | undefined): strin
   return `${amount.toLocaleString("ko-KR")}원`;
 }
 
+export function formatItemName(value: string | null | undefined): string {
+  const original = (value ?? "").trim();
+  if (!original) {
+    return "";
+  }
+
+  const cleaned = original
+    .replace(/^\s*(?:S{1,8}|A{1,4})(?:\s*급)?(?:\s+|[·ㆍ.,-]\s*)/i, "")
+    .replace(/^\s*(?:S{1,8}|A{1,4})\s*급/i, "")
+    .replace(/^\s*[★☆]+\s*급?\s*/u, "")
+    .replace(/^\s*급\s+/, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  return cleaned || original;
+}
+
+export function formatItemNote(value: string | null | undefined): string {
+  const original = (value ?? "").trim();
+  if (!original) {
+    return "";
+  }
+
+  const cleaned = original
+    .replace(/^\s*(?:S{1,8}|A{1,4})(?:\s*급)?(?:\s+|[·ㆍ.,-]\s*)/i, "")
+    .replace(/^\s*(?:S{1,8}|A{1,4})\s*급/i, "")
+    .replace(/^\s*[★☆]+\s*급?\s*[·ㆍ.,-]?\s*/u, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  return cleaned || original;
+}
+
 export function formatStatusLabel(value: string): string {
   const labels: Record<string, string> = {
     available: "주문 가능",
@@ -59,13 +92,19 @@ export function formatStatusLabel(value: string): string {
     ready_for_prep: "손질 준비 시작",
     completed: "전달 완료",
     unpaid: "입금 전",
+    paid: "입금 확인 완료",
+    pending: "확인 중",
     quoted: "금액 안내 완료",
     manual_confirmed: "입금 확인 완료",
+    auto_confirmed: "입금 확인 완료",
+    review_required: "확인 필요",
+    partial_paid: "일부 입금",
+    over_paid: "초과 입금",
     payment_confirmed: "입금 확인 완료",
     payment_review_required: "입금 확인 필요",
     manual_review_required: "입금 확인 필요",
     pickup: "매장 픽업",
-    quick: "퀵 배송",
+    quick: "퀵 수령",
     parcel: "택배 수령",
     parcel_standard: "일반 택배",
     parcel_same_day: "당일 택배",
@@ -76,13 +115,14 @@ export function formatStatusLabel(value: string): string {
     quick_sent: "퀵 출발",
     parcel_waiting: "택배 발송 준비",
     parcel_sent: "택배 발송 완료",
-    whole: "한 마리 전체",
+    whole: "한 마리",
     half: "반마리 주문",
     half_request: "반마리 주문",
-    raw: "통손질",
+    reservation_request: "예약 문의",
+    raw: "원물 그대로",
     fillet: "포 뜨기",
     sashimi: "회 손질",
-    round: "통손질",
+    round: "원물 그대로",
     steak: "토막 손질",
     masukawa: "마스까와",
     sekkoshi: "세꼬시",
@@ -98,7 +138,7 @@ export function formatStatusLabel(value: string): string {
     cancelled: "주문 취소"
   };
 
-  return labels[value] ?? value.replaceAll("_", " ");
+  return labels[value] ?? "확인 필요";
 }
 
 export function formatSourceModeLabel(value: "live" | "demo") {

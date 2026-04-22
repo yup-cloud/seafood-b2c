@@ -4,7 +4,7 @@ import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { demoAdminOrderDetail } from "../data/demo";
 import { api } from "../lib/api";
-import { formatCurrency, formatDate, formatDateTime, formatStatusLabel } from "../lib/format";
+import { formatCurrency, formatDate, formatDateTime, formatItemName, formatStatusLabel } from "../lib/format";
 import { AdminOrderDetail } from "../types";
 
 interface QuoteFormState {
@@ -169,7 +169,7 @@ export function AdminOrderPage() {
       showToast("최종 금액을 저장했습니다.", "success");
       await reloadOrder();
     } catch {
-      showToast("저장 중 오류가 발생했습니다. 다시 시도해주세요.", "error");
+      showToast("저장 중 오류가 발생했습니다. 다시 시도해 주세요.", "error");
     }
   }
 
@@ -215,7 +215,7 @@ export function AdminOrderPage() {
     }
     const amount = Number(paymentForm.confirmedAmount || order.quote?.final_amount || 0);
     if (!amount) {
-      showToast("확인 금액이 비어 있습니다. 먼저 최종 금액을 입력해주세요.", "error");
+      showToast("확인 금액이 비어 있습니다. 먼저 최종 금액을 입력해 주세요.", "error");
       return;
     }
     try {
@@ -377,7 +377,7 @@ export function AdminOrderPage() {
               {order.items.map((item) => (
                 <div key={item.id} className="list-row">
                   <div>
-                    <strong>{item.item_name}</strong>
+                    <strong>{formatItemName(item.item_name)}</strong>
                     <p>
                       {item.origin_label ?? "원산지 미지정"} · {item.size_band ?? "규격 미지정"}
                     </p>

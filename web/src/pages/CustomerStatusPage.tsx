@@ -54,7 +54,7 @@ export function CustomerStatusPage() {
         if (cancelled) return;
         setOrder(demoOrderStatus);
         setIsDemo(true);
-        setMessage("지금은 서비스 미리보기 화면으로 예시 주문 상태를 보여드리고 있어요.");
+        setMessage("서비스 미리보기 화면입니다. 예시 주문 상태가 표시됩니다.");
         setLastUpdatedAt(new Date().toISOString());
       } finally {
         if (!cancelled) {
@@ -89,7 +89,7 @@ export function CustomerStatusPage() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!orderNoInput.trim()) {
-      setMessage("주문 후 안내받은 주문번호를 입력해주세요.");
+      setMessage("주문 후 안내받은 주문번호를 입력해 주세요.");
       return;
     }
     setSearchParams({ orderNo: orderNoInput.trim().toUpperCase() });
@@ -99,7 +99,7 @@ export function CustomerStatusPage() {
     const token = searchParams.get("token");
     const orderNo = searchParams.get("orderNo");
     if (!token && !orderNo) {
-      setMessage("주문번호를 먼저 입력해주세요.");
+      setMessage("주문번호를 먼저 입력해 주세요.");
       return;
     }
 
@@ -115,7 +115,7 @@ export function CustomerStatusPage() {
     } catch {
       setOrder(demoOrderStatus);
       setIsDemo(true);
-      setMessage("지금은 서비스 미리보기 화면으로 예시 주문 상태를 보여드리고 있어요.");
+      setMessage("서비스 미리보기 화면입니다. 예시 주문 상태가 표시됩니다.");
       setLastUpdatedAt(new Date().toISOString());
     } finally {
       setRefreshing(false);
@@ -130,7 +130,7 @@ export function CustomerStatusPage() {
         <div>
           <p className="eyebrow-text">주문 상태 조회</p>
           <h1 className="page-title">주문번호로 진행 상황을 바로 확인하세요</h1>
-          <p className="page-description">금액 안내, 입금 확인, 준비 상태를 한 화면에서 확인하실 수 있어요.</p>
+          <p className="page-description">금액 안내, 입금 확인, 준비 상태를 한 화면에서 확인할 수 있습니다.</p>
         </div>
       </section>
 
@@ -144,11 +144,11 @@ export function CustomerStatusPage() {
         </section>
       ) : null}
 
-      <SectionCard title="주문번호 입력" subtitle="주문 후 안내받은 주문번호를 입력해주세요.">
+      <SectionCard title="주문번호 입력" subtitle="주문 후 안내받은 주문번호를 입력해 주세요.">
         {hasDirectLinkToken ? (
           <div className="notice-panel">
-            <p>보내드린 링크로 바로 들어오셔서 주문 상태를 자동으로 불러오고 있어요.</p>
-            <p>다른 주문은 아래 주문번호로 다시 조회하실 수 있어요.</p>
+            <p>전달받은 링크로 접속해 주문 상태를 자동으로 불러오고 있습니다.</p>
+            <p>다른 주문은 아래 주문번호로 다시 조회할 수 있습니다.</p>
           </div>
         ) : null}
         <form className="inline-form" onSubmit={handleSubmit} noValidate>
@@ -166,12 +166,12 @@ export function CustomerStatusPage() {
           </button>
         </form>
         {!order && !message ? (
-          <p className="field-hint">주문 접수 후 문자 또는 카톡으로 안내된 번호를 입력해주세요.</p>
+          <p className="field-hint">주문 접수 후 문자 또는 카톡으로 안내된 번호를 입력해 주세요.</p>
         ) : null}
         {order ? (
           <div className="status-refresh-bar">
             <p aria-live="polite">
-              {lastUpdatedAt ? `최근 확인 ${formatDateTime(lastUpdatedAt)} · 30초마다 자동 새로고침` : "주문 상태를 불러오는 중이에요."}
+              {lastUpdatedAt ? `최근 확인 ${formatDateTime(lastUpdatedAt)} · 30초마다 자동 새로고침` : "주문 상태를 불러오는 중입니다."}
             </p>
             <button type="button" className="secondary-button compact-button" onClick={handleRefresh} disabled={refreshing}>
               {refreshing ? "확인 중..." : "지금 다시 확인"}
@@ -191,7 +191,7 @@ export function CustomerStatusPage() {
           {/* ✅ 개선: 데모 상태일 때 상단에 명확한 안내 배너 */}
           {isDemo ? (
             <div className="demo-notice-banner" role="status">
-              지금 보시는 내용은 실제 주문이 아닌 <strong>예시 화면</strong>입니다. 실제 주문번호를 입력하시면 실제 진행 상태를 확인하실 수 있어요.
+              현재 화면은 실제 주문이 아닌 <strong>예시 화면</strong>입니다. 실제 주문번호를 입력하면 진행 상태를 확인할 수 있습니다.
             </div>
           ) : null}
 
@@ -216,7 +216,7 @@ export function CustomerStatusPage() {
             </div>
           </SectionCard>
 
-          <SectionCard title="지금 어디까지 준비됐나요?" subtitle="주문이 어떤 단계에 있는지 차례대로 확인하실 수 있어요.">
+          <SectionCard title="현재 진행 단계" subtitle="주문이 어떤 단계에 있는지 순서대로 확인할 수 있습니다.">
             <ol className="timeline-list">
               {statusFlow.map((step, index) => {
                 const stateClass =
@@ -231,7 +231,7 @@ export function CustomerStatusPage() {
             </ol>
           </SectionCard>
 
-          <SectionCard title="입금 안내" subtitle="최종 금액이 확정되면 아래 계좌로 입금해주시면 바로 확인해드려요.">
+          <SectionCard title="입금 안내" subtitle="최종 금액이 확정되면 아래 계좌로 입금해 주세요. 입금 후 순차적으로 확인합니다.">
             {order.payment_status === "paid" ? (
               <div className="notice-panel">
                 <strong>✅ 입금 확인 완료</strong>
@@ -256,27 +256,27 @@ export function CustomerStatusPage() {
                 {/* ✅ 개선: 입금 전 단계 (금액 미확정) 명확히 안내 */}
                 {order.payment_status === "pending" || !order.quoted_amount ? (
                   <div className="notice-panel" style={{ marginTop: "12px" }}>
-                    <p>금액이 아직 확정되지 않았습니다. 확정 후 다시 안내드릴게요. 입금은 금액 안내 이후에 진행해주세요.</p>
+                    <p>금액이 아직 확정되지 않았습니다. 확정 후 다시 안내합니다. 입금은 금액 안내 이후 진행해 주세요.</p>
                   </div>
                 ) : null}
               </>
             )}
           </SectionCard>
 
-          <SectionCard title="지금 내가 하면 되는 일" subtitle="주문 상태에 따라 가장 필요한 다음 행동만 간단하게 안내드릴게요.">
+          <SectionCard title="다음 단계 안내" subtitle="주문 상태에 따라 필요한 행동만 간단히 안내합니다.">
             <div className="support-grid">
               <div className="support-card">
                 <strong>금액 안내 전 단계</strong>
-                <p>품목 상태와 손질 조건을 확인 중이라면 조금만 기다려주세요. 보통 확인 후 순차적으로 안내드려요.</p>
+                <p>품목 상태와 손질 조건을 확인 중이라면 잠시 기다려 주세요. 확인 후 순차적으로 안내합니다.</p>
               </div>
               <div className="support-card">
                 <strong>입금 안내를 받으셨다면</strong>
-                <p>입금 후 이 페이지를 새로 확인하시면 준비 상태가 업데이트돼요. 입금자명이 다르면 꼭 같이 알려주세요.</p>
+                <p>입금 후 이 페이지를 다시 확인하면 준비 상태가 업데이트됩니다. 입금자명이 다르면 함께 알려주세요.</p>
               </div>
               <div className="support-card highlight">
                 <strong>급하게 확인이 필요하신가요?</strong>
                 <p>
-                  진행이 오래 멈춘 것처럼 보이면 매장 연락처로 바로 확인하실 수 있어요.
+                  진행이 오래 멈춘 것처럼 보이면 매장 연락처로 바로 확인할 수 있습니다.
                   {demoStore.phones[0] ? (
                     <>
                       {" "}
@@ -290,19 +290,19 @@ export function CustomerStatusPage() {
             </div>
           </SectionCard>
 
-          <SectionCard title="수령 후 보관 · 섭취 가이드" subtitle="받는 방식과 손질 상태에 따라 가장 무난한 보관 방법만 짧게 안내드릴게요.">
+          <SectionCard title="수령 후 보관 · 섭취 가이드" subtitle="수령 방식과 손질 상태에 맞춘 기본 보관 방법입니다.">
             <div className="support-grid">
               <div className="support-card">
                 <strong>회 손질</strong>
-                <p>가급적 수령 후 2시간 내 드시는 것을 권장드리고, 잠시 보관 시에는 냉장 보관해주세요.</p>
+                <p>가급적 수령 후 2시간 내 섭취를 권장합니다. 잠시 보관할 경우 냉장 보관해 주세요.</p>
               </div>
               <div className="support-card">
-                <strong>필렛 · 오로시</strong>
-                <p>냉장 보관 후 당일 또는 다음날 빠르게 드시는 편이 가장 좋고, 진공포장은 이동과 보관이 조금 더 편해요.</p>
+                <strong>포 뜨기 · 오로시</strong>
+                <p>냉장 보관 후 당일 또는 다음날 빠르게 섭취하는 것이 좋습니다. 진공 포장은 이동과 보관에 도움이 됩니다.</p>
               </div>
               <div className="support-card">
                 <strong>택배 수령</strong>
-                <p>도착 즉시 냉장 상태를 먼저 확인하고, 장시간 상온 보관은 피하시는 게 좋아요.</p>
+                <p>도착 즉시 냉장 상태를 확인하고, 장시간 상온 보관은 피하는 것이 좋습니다.</p>
               </div>
             </div>
           </SectionCard>
@@ -320,19 +320,19 @@ export function CustomerStatusPage() {
                 <div className="support-card">
                   <strong>금액 안내 완료</strong>
                   <p>
-                    {order.order_no} 주문의 최종 금액이 확정되었어요. 확인 후 입금해주시면 바로 준비를 시작할게요.
+                    {order.order_no} 주문의 최종 금액이 확정되었습니다. 확인 후 입금하면 준비가 시작됩니다.
                   </p>
                 </div>
                 <div className="support-card">
                   <strong>입금 확인 완료</strong>
                   <p>
-                    입금 확인이 끝나 손질과 포장을 시작했어요. 준비가 끝나면 수령 방식에 맞춰 다시 안내드릴게요.
+                    입금 확인이 완료되어 손질과 포장을 시작했습니다. 준비가 끝나면 수령 방식에 맞춰 다시 안내합니다.
                   </p>
                 </div>
                 <div className="support-card highlight">
                   <strong>출고 완료</strong>
                   <p>
-                    선택하신 방식으로 전달이 시작되었어요. 바로 드시는 회는 수령 후 2시간 내 섭취를 가장 권장드려요.
+                    선택한 방식으로 전달이 시작되었습니다. 바로 드시는 회는 수령 후 2시간 내 섭취를 권장합니다.
                   </p>
                 </div>
               </div>
@@ -347,11 +347,11 @@ export function CustomerStatusPage() {
 function resolveStepCopy(step: string) {
   switch (step) {
     case "pricing_pending":
-      return "품목 상태와 손질, 배송 조건을 확인한 뒤 정확한 금액을 안내드리고 있어요.";
+      return "품목 상태와 손질, 배송 조건을 확인한 뒤 정확한 금액을 안내합니다.";
     case "waiting_payment":
-      return "최종 금액 안내가 완료되어 입금을 기다리고 있어요.";
+      return "최종 금액 안내가 완료되어 입금을 기다리고 있습니다.";
     case "ready_for_prep":
-      return "입금 확인이 끝나 정성껏 손질과 포장을 준비하고 있어요.";
+      return "입금 확인이 완료되어 손질과 포장을 준비하고 있습니다.";
     case "completed":
       return "선택하신 픽업, 퀵, 택배 방식으로 전달이 완료됐어요.";
     default:

@@ -31,7 +31,7 @@ export function AppShell({ children }: PropsWithChildren) {
     event.preventDefault();
 
     if (!grantAdminAccess(accessToken)) {
-      setAccessError("운영 PIN이 맞지 않습니다. 다시 확인해주세요.");
+      setAccessError("운영 PIN이 맞지 않습니다. 다시 확인해 주세요.");
       return;
     }
 
@@ -46,7 +46,7 @@ export function AppShell({ children }: PropsWithChildren) {
           <div className="brand-mark">오</div>
           <div className="brand-copy">
             <p className="brand-title">오늘바다</p>
-            <p className="brand-subtitle">당일 시세로 주문하는 믿을 수 있는 수산 서비스</p>
+            <p className="brand-subtitle">당일 시세를 확인하고 주문하는 수산 주문 서비스</p>
           </div>
         </div>
         <nav className="topnav">
@@ -82,7 +82,7 @@ export function AppShell({ children }: PropsWithChildren) {
       ) : null}
       <footer className="app-footer">
         <div className="app-footer-inner">
-          <p className="footer-copy">오늘 시세 확인부터 주문, 진행 조회까지 한 번에 이용하실 수 있어요.</p>
+          <p className="footer-copy">오늘 시세 확인부터 주문, 진행 조회까지 한 번에 이용할 수 있습니다.</p>
         </div>
       </footer>
       {isAccessOpen ? (
