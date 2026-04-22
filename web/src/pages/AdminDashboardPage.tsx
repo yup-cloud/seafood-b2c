@@ -1,4 +1,4 @@
-import { ChangeEvent, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { MetricCard } from "../components/MetricCard";
 import { SectionCard } from "../components/SectionCard";
@@ -22,6 +22,35 @@ const priceItemStatuses = [
   { value: "sold_out", label: "품절" }
 ];
 
+// ✅ 개선: 확인 모달 컴포넌트
+interface ConfirmDialogProps {
+  title: string;
+  body: string | React.ReactNode;
+  confirmLabel: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading?: boolean;
+}
+
+function ConfirmDialog({ title, body, confirmLabel, onConfirm, onCancel, loading }: ConfirmDialogProps) {
+  return (
+    <div className="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <div className="confirm-panel">
+        <h2 className="confirm-panel-title" id="confirm-title">{title}</h2>
+        <p className="confirm-panel-body">{body}</p>
+        <div className="confirm-actions">
+          <button type="button" className="secondary-button compact-button" onClick={onCancel} disabled={loading}>
+            취소
+          </button>
+          <button type="button" className="primary-button compact-button" onClick={onConfirm} disabled={loading}>
+            {loading ? "처리 중..." : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AdminDashboardPage() {
   const [ordersResponse, setOrdersResponse] = useState<AdminOrdersResponse>(demoAdminOrders);
   const [reviewQueue, setReviewQueue] = useState<PaymentReviewItem[]>(demoPaymentReview);
@@ -38,11 +67,18 @@ export function AdminDashboardPage() {
   const [isSavingBoard, setIsSavingBoard] = useState(false);
   const [parsedPreview, setParsedPreview] = useState<PriceBoardResponse | null>(null);
   const [isLoadingPreviousBoard, setIsLoadingPreviousBoard] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  // ✅ 버그 수정: refreshKey로 수동 새로고침 트리거
+  const [refreshKey, setRefreshKey] = useState(0);
+  // ✅ 개선: 오늘 시세 반영 전 확인 다이얼로그
+  const [showApplyConfirm, setShowApplyConfirm] = useState(false);
+  const loadRef = useRef<((silent?: boolean) => Promise<void>) | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
+  // ✅ 버그 수정: load 함수를 useCallback으로 분리하여 직접 호출 가능하게 함
+  const loadData = useCallback(
+    async (silent = false) => {
+      if (!silent) setIsRefreshing(true);
       try {
         const [nextOrders, nextReviews, nextFulfillments, nextStore, nextBoard] = await Promise.all([
           api.getAdminOrders(deferredSearch.trim() || undefined),
@@ -52,21 +88,14 @@ export function AdminDashboardPage() {
           api.getPriceBoard()
         ]);
 
-        if (cancelled) {
-          return;
-        }
-
         setOrdersResponse(nextOrders);
         setReviewQueue(nextReviews.review_queue);
         setFulfillments(nextFulfillments.fulfillments);
         setStore(nextStore);
         setBoard(nextBoard);
         setMode("live");
+        setLastRefreshed(new Date());
       } catch {
-        if (cancelled) {
-          return;
-        }
-
         const lowered = deferredSearch.trim().toLowerCase();
         const filteredOrders = !lowered
           ? demoAdminOrders.orders
@@ -78,24 +107,57 @@ export function AdminDashboardPage() {
               );
             });
 
-        setOrdersResponse({
-          ...demoAdminOrders,
-          orders: filteredOrders
-        });
+        setOrdersResponse({ ...demoAdminOrders, orders: filteredOrders });
         setReviewQueue(demoPaymentReview);
         setFulfillments(demoFulfillments);
         setStore(demoStore);
         setBoard(demoPriceBoard);
         setMode("demo");
+        setLastRefreshed(new Date());
+      } finally {
+        setIsRefreshing(false);
       }
+    },
+    [deferredSearch]
+  );
+
+  // loadRef에 최신 loadData 저장 (interval 등에서 stale closure 방지)
+  loadRef.current = loadData;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load(silent = false) {
+      if (cancelled) return;
+      await loadData(silent);
     }
 
     void load();
 
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") void loadRef.current?.(true);
+    }, 60000);
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") void loadRef.current?.(true);
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       cancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [deferredSearch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deferredSearch, refreshKey]);
+
+  // ✅ 개선: 복사 메시지 4초 후 자동 소멸
+  useEffect(() => {
+    if (!copyMessage) return;
+    const timer = setTimeout(() => setCopyMessage(""), 4000);
+    return () => clearTimeout(timer);
+  }, [copyMessage]);
 
   const waitingPaymentCount = ordersResponse.orders.filter((order) => order.payment_status === "unpaid").length;
   const prepCount = ordersResponse.orders.filter((order) => order.order_status === "ready_for_prep").length;
@@ -141,6 +203,11 @@ export function AdminDashboardPage() {
       behavior: "smooth",
       block: "start"
     });
+  }
+
+  // ✅ 버그 수정: refreshKey 증가로 useEffect를 실제로 재실행
+  function handleManualRefresh() {
+    setRefreshKey((prev) => prev + 1);
   }
 
   async function handleCopyNotice() {
@@ -265,6 +332,16 @@ export function AdminDashboardPage() {
     }
   }
 
+  // ✅ 개선: 확인 버튼 클릭 시 모달 표시
+  function handleRequestApply() {
+    const source = parsedPreview ?? (pricePaste.trim() ? parsePriceBoardNotice(pricePaste, getKoreaTodayDate()) : null);
+    if (!source || !source.items.length) {
+      setParseMessage("먼저 카톡 시세표를 붙여넣고 자동 추출을 눌러주세요.");
+      return;
+    }
+    setShowApplyConfirm(true);
+  }
+
   async function handleApplyParsedBoard() {
     const source =
       parsedPreview ??
@@ -281,6 +358,7 @@ export function AdminDashboardPage() {
     }
 
     setIsSavingBoard(true);
+    setShowApplyConfirm(false);
     setParseMessage("");
 
     try {
@@ -351,6 +429,24 @@ export function AdminDashboardPage() {
 
   return (
     <div className="page-content">
+      {/* ✅ 개선: 오늘 시세 반영 확인 다이얼로그 */}
+      {showApplyConfirm ? (
+        <ConfirmDialog
+          title="오늘 시세로 반영할까요?"
+          body={
+            <>
+              <strong>{(parsedPreview ?? board).items.length}개 품목</strong>이 고객 화면에 즉시 반영됩니다.
+              기존 시세와 다른 품목은 자동으로 업데이트되고, 이번에 없는 품목은 품절로 처리됩니다.
+              반영 후에는 되돌리기 어려우니 미리보기를 한번 더 확인해주세요.
+            </>
+          }
+          confirmLabel="지금 반영하기"
+          onConfirm={() => { void handleApplyParsedBoard(); }}
+          onCancel={() => setShowApplyConfirm(false)}
+          loading={isSavingBoard}
+        />
+      ) : null}
+
       <section className="page-hero compact">
         <div>
           <p className="eyebrow-text">관리자 대시보드</p>
@@ -361,12 +457,33 @@ export function AdminDashboardPage() {
         </div>
         <div className="hero-pills">
           <span className={`mode-badge ${mode}`}>{formatSourceModeLabel(mode)}</span>
-          <input
-            className="search-input"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="주문번호, 이름, 품목 검색"
-          />
+          <div className="search-bar-wrap">
+            <input
+              className="search-input"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="주문번호, 이름, 품목 검색"
+              aria-label="주문 검색"
+            />
+            {search ? (
+              <button type="button" className="search-clear-button" onClick={() => setSearch("")} aria-label="검색어 지우기">×</button>
+            ) : null}
+          </div>
+          {/* ✅ 버그 수정: 실제로 새로고침 트리거 */}
+          <button
+            type="button"
+            className={`secondary-button compact-button${isRefreshing ? " loading" : ""}`}
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            aria-label="데이터 새로고침"
+          >
+            {isRefreshing ? "갱신 중..." : "↻ 새로고침"}
+          </button>
+          {lastRefreshed ? (
+            <span className="refresh-hint" aria-live="polite">
+              {lastRefreshed.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} 갱신
+            </span>
+          ) : null}
         </div>
       </section>
 
@@ -407,11 +524,18 @@ export function AdminDashboardPage() {
         subtitle="카톡 공지 전체를 그대로 붙여넣고 자동 추출만 누르세요. 틀린 품목만 아래에서 고치면 됩니다."
       >
         <div className="kakao-generator-card">
+          {/* ✅ 개선: 붙여넣기 형식 힌트 */}
+          <div className="paste-guide-chips">
+            <span className="paste-guide-chip">국내산 / 일본산 / 중국산 / 노르웨이</span>
+            <span className="paste-guide-chip">품목명 + 가격 포함 라인 자동 인식</span>
+            <span className="paste-guide-chip">품절 · 예약 판매 상태 자동 분류</span>
+          </div>
           <textarea
             className="kakao-notice-preview tall"
             value={pricePaste}
             onChange={(event) => setPricePaste(event.target.value)}
             placeholder="카톡에 올린 오늘 시세표를 그대로 붙여넣어 주세요."
+            aria-label="카톡 시세 붙여넣기"
           />
           <div className="summary-bar wrap">
             <div>
@@ -430,10 +554,11 @@ export function AdminDashboardPage() {
               <button type="button" className="secondary-button compact-button" onClick={handleParsePriceText}>
                 자동 추출
               </button>
+              {/* ✅ 개선: 반영 전 확인 모달 */}
               <button
                 type="button"
                 className="primary-button compact-button"
-                onClick={handleApplyParsedBoard}
+                onClick={handleRequestApply}
                 disabled={isSavingBoard}
               >
                 {isSavingBoard ? "반영 중..." : "오늘 시세로 반영"}
@@ -447,7 +572,7 @@ export function AdminDashboardPage() {
               최대 60초 안에 새 시세를 다시 불러옵니다.
             </p>
           </div>
-          {parseMessage ? <p className="helper-text">{parseMessage}</p> : null}
+          {parseMessage ? <p className="helper-text" aria-live="polite">{parseMessage}</p> : null}
         </div>
         <div className="import-preview-grid">
           {(parsedPreview?.items ?? board.items).map((item, index) => (
@@ -458,6 +583,7 @@ export function AdminDashboardPage() {
                   type="button"
                   className="text-link danger"
                   onClick={() => handleRemovePreviewItem(index)}
+                  aria-label={`${item.item_name} 삭제`}
                 >
                   삭제
                 </button>
@@ -514,6 +640,7 @@ export function AdminDashboardPage() {
                   </select>
                 </label>
               </div>
+              {/* ✅ 개선: 상태 버튼 – 시각적으로 현재 상태 강조 */}
               <div className="status-button-row">
                 {priceItemStatuses.map((status) => (
                   <button
@@ -596,8 +723,8 @@ export function AdminDashboardPage() {
               문구 복사하기
             </button>
           </div>
-          <textarea className="kakao-notice-preview" value={noticeText} readOnly />
-          {copyMessage ? <p className="helper-text">{copyMessage}</p> : null}
+          <textarea className="kakao-notice-preview" value={noticeText} readOnly aria-label="카톡 공지 미리보기" />
+          {copyMessage ? <p className="helper-text" aria-live="polite">{copyMessage}</p> : null}
         </div>
       </SectionCard>
 
@@ -644,7 +771,11 @@ export function AdminDashboardPage() {
 
             return (
               <div key={order.id} className="support-card highlight">
-                <strong>{order.order_no}</strong>
+                <div className="summary-bar">
+                  <strong>{order.order_no}</strong>
+                  {/* ✅ 개선: 우선순위 시각화 */}
+                  <span className="priority-dot" aria-label="우선 처리 필요" />
+                </div>
                 <p>
                   {order.customer_name} · {order.item_summary ?? "품목 확인 필요"}
                 </p>
@@ -655,7 +786,7 @@ export function AdminDashboardPage() {
                     상세 보기
                   </Link>
                 </div>
-                <textarea className="kakao-notice-preview small" value={quickGuide} readOnly />
+                <textarea className="kakao-notice-preview small" value={quickGuide} readOnly aria-label={`${order.order_no} 안내 문구`} />
                 <button
                   type="button"
                   className="secondary-button compact-button"
@@ -686,10 +817,16 @@ export function AdminDashboardPage() {
               <tbody>
                 {ordersResponse.orders.map((order) => (
                   <tr key={order.id}>
-                    <td>{order.order_no}</td>
+                    <td>
+                      <strong>{order.order_no}</strong>
+                    </td>
                     <td>
                       <strong>{order.customer_name}</strong>
-                      <p>{order.customer_phone}</p>
+                      <p>
+                        <a href={`tel:${order.customer_phone}`} className="phone-link">
+                          {order.customer_phone}
+                        </a>
+                      </p>
                     </td>
                     <td>
                       <strong>{order.item_summary ?? "-"}</strong>
@@ -714,43 +851,51 @@ export function AdminDashboardPage() {
         <div className="stacked-cards">
           <SectionCard title="입금 검토 큐" subtitle="자동 확정이 애매한 주문만 분리">
             <div className="stack-list">
-              {reviewQueue.map((item) => (
-                <div key={item.order_id} className="review-queue-card">
-                  <div className="review-queue-head">
-                    <div>
-                      <strong>{item.order_no}</strong>
-                      <p>{item.customer_name}</p>
+              {reviewQueue.length ? (
+                reviewQueue.map((item) => (
+                  <div key={item.order_id} className="review-queue-card">
+                    <div className="review-queue-head">
+                      <div>
+                        <strong>{item.order_no}</strong>
+                        <p>{item.customer_name}</p>
+                      </div>
+                      <span className="mini-pill">{formatCurrency(item.expected_amount)}</span>
                     </div>
-                    <span className="mini-pill">{formatCurrency(item.expected_amount)}</span>
+                    <p className="helper-text">{item.review_reason}</p>
+                    {item.transaction_candidates.map((candidate) => (
+                      <div key={candidate.id} className="candidate-chip">
+                        <span>{candidate.depositor_name ?? "입금자 미상"}</span>
+                        <strong>{formatCurrency(candidate.amount)}</strong>
+                      </div>
+                    ))}
                   </div>
-                  <p className="helper-text">{item.review_reason}</p>
-                  {item.transaction_candidates.map((candidate) => (
-                    <div key={candidate.id} className="candidate-chip">
-                      <span>{candidate.depositor_name ?? "입금자 미상"}</span>
-                      <strong>{formatCurrency(candidate.amount)}</strong>
-                    </div>
-                  ))}
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="helper-text">현재 검토 대기 중인 입금 건이 없습니다.</p>
+              )}
             </div>
           </SectionCard>
 
           <SectionCard title="출고 대기" subtitle="방식별로 지금 인계가 필요한 주문">
             <div className="stack-list">
-              {fulfillments.map((item) => (
-                <div key={item.id} className="list-row">
-                  <div>
-                    <strong>{item.order_no}</strong>
-                    <p>
-                      {item.customer_name} · {formatStatusLabel(item.fulfillment_type)}
-                    </p>
+              {fulfillments.length ? (
+                fulfillments.map((item) => (
+                  <div key={item.id} className="list-row">
+                    <div>
+                      <strong>{item.order_no}</strong>
+                      <p>
+                        {item.customer_name} · {formatStatusLabel(item.fulfillment_type)}
+                      </p>
+                    </div>
+                    <div className="row-end">
+                      <StatusBadge value={item.fulfillment_status} />
+                      <small>{formatDate(item.requested_date)}</small>
+                    </div>
                   </div>
-                  <div className="row-end">
-                    <StatusBadge value={item.fulfillment_status} />
-                    <small>{formatDate(item.requested_date)}</small>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="helper-text">현재 출고 대기 중인 주문이 없습니다.</p>
+              )}
             </div>
           </SectionCard>
         </div>

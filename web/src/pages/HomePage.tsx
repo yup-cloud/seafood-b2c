@@ -155,7 +155,13 @@ export function HomePage() {
                 </div>
               ))
             ) : (
-              <div className="empty-order-card">관리자가 오늘 시세를 게시하면 이곳에 어종과 가격이 표시됩니다.</div>
+              <div className="empty-board-state">
+                <p>🐟 오늘 시세를 준비 중이에요</p>
+                <p>잠시 후 다시 확인하시거나, 예약 주문으로 원하는 품목을 먼저 남겨두실 수 있어요.</p>
+                <Link to="/customer/order?flow=reservation" className="secondary-button compact-button">
+                  예약 주문 남기기
+                </Link>
+              </div>
             )}
           </div>
         </SectionCard>
@@ -186,6 +192,24 @@ export function HomePage() {
           </div>
         </SectionCard>
       </div>
+
+      {/* ✅ 개선: 손질비 안내 섹션 – 주문 전 비용 투명하게 공개 */}
+      {board.order_guide.processing_rules_summary.length > 0 && (
+        <SectionCard
+          title="손질 비용 안내"
+          subtitle="원물 가격 외에 추가되는 손질비 기준이에요. 주문 시 참고해주세요."
+        >
+          <div className="stack-list">
+            {board.order_guide.processing_rules_summary.map((rule) => (
+              <div key={rule} className="list-row">
+                <div>
+                  <strong>{rule}</strong>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
 
       <SectionCard
         title="처음 주문하시는 분이 가장 많이 물어보세요"

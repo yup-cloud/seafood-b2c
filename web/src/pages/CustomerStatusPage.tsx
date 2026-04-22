@@ -16,6 +16,8 @@ export function CustomerStatusPage() {
   const [message, setMessage] = useState("");
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  // ✅ 개선: 데모 상태 여부를 별도로 추적
+  const [isDemo, setIsDemo] = useState(false);
   const hasDirectLinkToken = Boolean(searchParams.get("token"));
   const isSubmittedView = searchParams.get("submitted") === "1";
 
@@ -32,7 +34,6 @@ export function CustomerStatusPage() {
 
     const requestedToken = token;
     const requestedOrderNo = orderNo;
-
     let cancelled = false;
 
     async function load(silent = false) {
@@ -44,17 +45,15 @@ export function CustomerStatusPage() {
         const nextOrder = requestedToken
           ? await api.getPublicOrder(requestedToken)
           : await api.getPublicOrderByOrderNo(requestedOrderNo ?? "");
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         setOrder(nextOrder);
+        setIsDemo(false);
         setMessage("");
         setLastUpdatedAt(new Date().toISOString());
       } catch {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         setOrder(demoOrderStatus);
+        setIsDemo(true);
         setMessage("지금은 서비스 미리보기 화면으로 예시 주문 상태를 보여드리고 있어요.");
         setLastUpdatedAt(new Date().toISOString());
       } finally {
@@ -93,7 +92,6 @@ export function CustomerStatusPage() {
       setMessage("주문 후 안내받은 주문번호를 입력해주세요.");
       return;
     }
-
     setSearchParams({ orderNo: orderNoInput.trim().toUpperCase() });
   }
 
@@ -111,10 +109,12 @@ export function CustomerStatusPage() {
         ? await api.getPublicOrder(token)
         : await api.getPublicOrderByOrderNo(orderNo ?? "");
       setOrder(nextOrder);
+      setIsDemo(false);
       setMessage("");
       setLastUpdatedAt(new Date().toISOString());
     } catch {
       setOrder(demoOrderStatus);
+      setIsDemo(true);
       setMessage("지금은 서비스 미리보기 화면으로 예시 주문 상태를 보여드리고 있어요.");
       setLastUpdatedAt(new Date().toISOString());
     } finally {
@@ -134,8 +134,10 @@ export function CustomerStatusPage() {
         </div>
       </section>
 
+      {/* ✅ 개선: 주문 접수 완료 히어로 */}
       {isSubmittedView ? (
         <section className="order-success-hero">
+          <div className="order-success-icon">✓</div>
           <p>주문서가 접수됐습니다</p>
           <strong>{searchParams.get("orderNo") ?? order?.order_no ?? "주문번호 확인 중"}</strong>
           <span>이 번호로 금액 안내, 입금 확인, 준비 상태를 다시 조회할 수 있습니다.</span>
@@ -149,25 +151,34 @@ export function CustomerStatusPage() {
             <p>다른 주문은 아래 주문번호로 다시 조회하실 수 있어요.</p>
           </div>
         ) : null}
-        <form className="inline-form" onSubmit={handleSubmit}>
+        <form className="inline-form" onSubmit={handleSubmit} noValidate>
           <input
             value={orderNoInput}
             onChange={(event) => setOrderNoInput(event.target.value)}
             placeholder="예: OB-20260406-123456"
+            inputMode="text"
+            autoCapitalize="characters"
+            autoComplete="off"
+            aria-label="주문번호 입력"
           />
           <button type="submit" className="primary-button">
-            상태 확인하기
+            확인하기
           </button>
         </form>
+        {!order && !message ? (
+          <p className="field-hint">주문 접수 후 문자 또는 카톡으로 안내된 번호를 입력해주세요.</p>
+        ) : null}
         {order ? (
           <div className="status-refresh-bar">
-            <p>{lastUpdatedAt ? `최근 확인 ${formatDateTime(lastUpdatedAt)} · 30초마다 자동으로 새로고침돼요.` : "주문 상태를 불러오는 중이에요."}</p>
+            <p aria-live="polite">
+              {lastUpdatedAt ? `최근 확인 ${formatDateTime(lastUpdatedAt)} · 30초마다 자동 새로고침` : "주문 상태를 불러오는 중이에요."}
+            </p>
             <button type="button" className="secondary-button compact-button" onClick={handleRefresh} disabled={refreshing}>
-              {refreshing ? "새로 확인 중..." : "지금 다시 확인"}
+              {refreshing ? "확인 중..." : "지금 다시 확인"}
             </button>
           </div>
         ) : null}
-        {message ? <p className="helper-text">{message}</p> : null}
+        {message ? <p className="helper-text" aria-live="polite">{message}</p> : null}
         <div className="inline-actions">
           <Link to="/customer/order?restoreRecent=1" className="secondary-button compact-button">
             같은 방식으로 다시 주문하기
@@ -177,6 +188,13 @@ export function CustomerStatusPage() {
 
       {order ? (
         <div className="status-section-stack">
+          {/* ✅ 개선: 데모 상태일 때 상단에 명확한 안내 배너 */}
+          {isDemo ? (
+            <div className="demo-notice-banner" role="status">
+              지금 보시는 내용은 실제 주문이 아닌 <strong>예시 화면</strong>입니다. 실제 주문번호를 입력하시면 실제 진행 상태를 확인하실 수 있어요.
+            </div>
+          ) : null}
+
           <SectionCard
             title={order.order_no}
             subtitle={order.next_step_message}
@@ -214,13 +232,35 @@ export function CustomerStatusPage() {
           </SectionCard>
 
           <SectionCard title="입금 안내" subtitle="최종 금액이 확정되면 아래 계좌로 입금해주시면 바로 확인해드려요.">
-            <div className="bank-guide-card">
-              <strong>{demoStore.name}</strong>
-              <p>
-                {order.bank_guide.bank_name} {order.bank_guide.bank_account}
-              </p>
-              <p>예금주 {order.bank_guide.bank_holder}</p>
-            </div>
+            {order.payment_status === "paid" ? (
+              <div className="notice-panel">
+                <strong>✅ 입금 확인 완료</strong>
+                <p>입금 확인이 완료되었습니다. 손질 준비가 진행됩니다.</p>
+              </div>
+            ) : (
+              <>
+                <div className="bank-guide-card">
+                  <strong>{demoStore.name}</strong>
+                  <p>
+                    {order.bank_guide.bank_name} {order.bank_guide.bank_account}
+                  </p>
+                  <p>예금주 {order.bank_guide.bank_holder}</p>
+                  {/* ✅ 개선: 미확인/대기 상태에서만 금액 강조 표시 */}
+                  {order.payment_status === "unpaid" && order.quoted_amount ? (
+                    <>
+                      <p>입금 금액</p>
+                      <strong className="bank-guide-amount">{formatCurrency(order.quoted_amount)}</strong>
+                    </>
+                  ) : null}
+                </div>
+                {/* ✅ 개선: 입금 전 단계 (금액 미확정) 명확히 안내 */}
+                {order.payment_status === "pending" || !order.quoted_amount ? (
+                  <div className="notice-panel" style={{ marginTop: "12px" }}>
+                    <p>금액이 아직 확정되지 않았습니다. 확정 후 다시 안내드릴게요. 입금은 금액 안내 이후에 진행해주세요.</p>
+                  </div>
+                ) : null}
+              </>
+            )}
           </SectionCard>
 
           <SectionCard title="지금 내가 하면 되는 일" subtitle="주문 상태에 따라 가장 필요한 다음 행동만 간단하게 안내드릴게요.">
@@ -237,30 +277,14 @@ export function CustomerStatusPage() {
                 <strong>급하게 확인이 필요하신가요?</strong>
                 <p>
                   진행이 오래 멈춘 것처럼 보이면 매장 연락처로 바로 확인하실 수 있어요.
-                  {demoStore.phones[0] ? ` ${demoStore.phones[0]}` : ""}
-                </p>
-              </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard title="자동 안내 예정 메시지" subtitle="실서비스에서는 아래 같은 안내가 순서대로 자동 발송되면 가장 체감이 커요.">
-            <div className="support-grid">
-              <div className="support-card">
-                <strong>금액 안내 완료</strong>
-                <p>
-                  {order.order_no} 주문의 최종 금액이 확정되었어요. 확인 후 입금해주시면 바로 준비를 시작할게요.
-                </p>
-              </div>
-              <div className="support-card">
-                <strong>입금 확인 완료</strong>
-                <p>
-                  입금 확인이 끝나 손질과 포장을 시작했어요. 준비가 끝나면 수령 방식에 맞춰 다시 안내드릴게요.
-                </p>
-              </div>
-              <div className="support-card highlight">
-                <strong>출고 완료</strong>
-                <p>
-                  선택하신 방식으로 전달이 시작되었어요. 바로 드시는 회는 수령 후 2시간 내 섭취를 가장 권장드려요.
+                  {demoStore.phones[0] ? (
+                    <>
+                      {" "}
+                      <a href={`tel:${demoStore.phones[0]}`} className="phone-link">
+                        {demoStore.phones[0]}
+                      </a>
+                    </>
+                  ) : ""}
                 </p>
               </div>
             </div>
@@ -282,6 +306,38 @@ export function CustomerStatusPage() {
               </div>
             </div>
           </SectionCard>
+
+          {/* ✅ 개선: "자동 안내 예정 메시지" 섹션 – 데모에서만 표시하고 명확히 데모임을 표시 */}
+          {isDemo ? (
+            <SectionCard
+              title="자동 안내 예정 메시지 예시"
+              subtitle="실서비스에서는 이런 문자/카톡 안내가 자동으로 발송됩니다. 아래 내용은 예시입니다."
+            >
+              <div className="demo-notice-banner" style={{ marginBottom: "16px" }}>
+                아래는 실제 발송 메시지가 아니라 <strong>예시 미리보기</strong>입니다.
+              </div>
+              <div className="support-grid">
+                <div className="support-card">
+                  <strong>금액 안내 완료</strong>
+                  <p>
+                    {order.order_no} 주문의 최종 금액이 확정되었어요. 확인 후 입금해주시면 바로 준비를 시작할게요.
+                  </p>
+                </div>
+                <div className="support-card">
+                  <strong>입금 확인 완료</strong>
+                  <p>
+                    입금 확인이 끝나 손질과 포장을 시작했어요. 준비가 끝나면 수령 방식에 맞춰 다시 안내드릴게요.
+                  </p>
+                </div>
+                <div className="support-card highlight">
+                  <strong>출고 완료</strong>
+                  <p>
+                    선택하신 방식으로 전달이 시작되었어요. 바로 드시는 회는 수령 후 2시간 내 섭취를 가장 권장드려요.
+                  </p>
+                </div>
+              </div>
+            </SectionCard>
+          ) : null}
         </div>
       ) : null}
     </div>
