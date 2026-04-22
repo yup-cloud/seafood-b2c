@@ -114,6 +114,33 @@ export async function getPublishedPriceBoardByDate(
   return result.rows[0] ?? null;
 }
 
+export async function getLatestPublishedPriceBoard(
+  storeId: string,
+  executor: Queryable = db
+): Promise<PriceBoardBatchRecord | null> {
+  const result = await executor.query<PriceBoardBatchRecord>(
+    `
+      select
+        id,
+        store_id,
+        board_date::text,
+        title,
+        status,
+        published_at::text,
+        created_at::text,
+        updated_at::text
+      from price_board_batches
+      where store_id = $1
+        and status = 'published'
+      order by board_date desc, published_at desc nulls last, updated_at desc
+      limit 1
+    `,
+    [storeId]
+  );
+
+  return result.rows[0] ?? null;
+}
+
 export async function getPriceBoardItems(batchId: string, executor: Queryable = db): Promise<PriceBoardItemRecord[]> {
   const result = await executor.query<PriceBoardItemRecord>(
     `

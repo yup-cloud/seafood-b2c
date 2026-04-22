@@ -4,6 +4,7 @@ import { listProcessingRules } from "../processing-rules/processing-rules.reposi
 import { getDefaultStore } from "../stores/stores.service";
 import {
   createPriceBoardItem,
+  getLatestPublishedPriceBoard,
   getPriceBoardItems,
   getPublishedPriceBoardByDate,
   listPriceBoardBatches,
@@ -11,6 +12,76 @@ import {
   updatePriceBoardItem,
   upsertPriceBoardBatch
 } from "./price-board.repository";
+
+const fallbackPriceBoardItems = [
+  {
+    id: "fallback_pb_1",
+    item_name: "자연산 광어",
+    origin_label: "국산",
+    size_band: "3~5kg",
+    unit_price: "22000",
+    unit_label: "kg",
+    sale_status: "available",
+    reservable_flag: true,
+    reservation_cutoff_note: "반마리 주문 가능 / 상태 확인 후 안내",
+    note: "데모 시세 · kg당 단가"
+  },
+  {
+    id: "fallback_pb_2",
+    item_name: "자연산 도다리",
+    origin_label: "국산",
+    size_band: "1~1.5kg",
+    unit_price: "20000",
+    unit_label: "kg",
+    sale_status: "available",
+    reservable_flag: true,
+    reservation_cutoff_note: "당일 문의 가능",
+    note: "데모 시세 · kg당 단가"
+  },
+  {
+    id: "fallback_pb_3",
+    item_name: "참돔",
+    origin_label: "일본산",
+    size_band: "2.5~3kg",
+    unit_price: "25000",
+    unit_label: "kg",
+    sale_status: "available",
+    reservable_flag: true,
+    reservation_cutoff_note: "껍질 작업은 확인 후 안내",
+    note: "데모 시세 · kg당 단가"
+  },
+  {
+    id: "fallback_pb_4",
+    item_name: "농어",
+    origin_label: "중국산",
+    size_band: "3~3.5kg",
+    unit_price: "23000",
+    unit_label: "kg",
+    sale_status: "available",
+    reservable_flag: true,
+    reservation_cutoff_note: "당일 문의 가능",
+    note: "데모 시세 · kg당 단가"
+  },
+  {
+    id: "fallback_pb_5",
+    item_name: "연어",
+    origin_label: "노르웨이",
+    size_band: "6~8kg",
+    unit_price: "23000",
+    unit_label: "kg",
+    sale_status: "reserved_only",
+    reservable_flag: true,
+    reservation_cutoff_note: "전날 예약 / 반마리 매칭 가능 여부 확인",
+    note: "데모 시세 · 예약 문의"
+  }
+];
+
+const fallbackProcessingRulesSummary = [
+  "오로시(필렛) kg당 2,000원",
+  "회 작업 kg당 4,000원",
+  "껍질 작업 kg당 5,000원",
+  "진공포장은 필렛 기준 가능 여부 확인"
+];
 
 function asString(value: unknown): string | undefined {
   if (typeof value !== "string") {
@@ -79,23 +150,29 @@ export async function getTodayPriceBoard(date?: string) {
     new Intl.DateTimeFormat("en-CA", {
       timeZone: "Asia/Seoul"
     }).format(new Date());
-  const batch = await getPublishedPriceBoardByDate(store.id, targetDate);
-  const items = batch ? await getPriceBoardItems(batch.id) : [];
+  const batch =
+    (await getPublishedPriceBoardByDate(store.id, targetDate)) ??
+    (date ? null : await getLatestPublishedPriceBoard(store.id));
+  const dbItems = batch ? await getPriceBoardItems(batch.id) : [];
+  const items = dbItems.length ? dbItems : fallbackPriceBoardItems;
   const rules = await listProcessingRules(store.id);
+  const processingRulesSummary = rules
+    .filter((rule) => rule.is_active)
+    .map((rule) => {
+      const fee = rule.fee_amount ? ` ${rule.fee_amount}원` : "";
+      return `${rule.species_name} ${rule.cut_type} ${rule.fee_mode}${fee}`.trim();
+    });
 
   return {
-    board_date: targetDate,
+    board_date: batch?.board_date ?? targetDate,
     items,
     order_guide: {
       pickup_note: "방문 예정 시간만 남겨주시면 포장비 없이 순서에 맞춰 준비해드려요.",
       quick_note: "당일 드실 분은 퀵이 가장 안정적이고, 최소 2~3시간 전 주문이 좋아요.",
       parcel_note: "당일택배는 오전 9시 30분 전 문자 주문, 일반택배는 필렛·오로시 위주로 권장해요.",
-      processing_rules_summary: rules
-        .filter((rule) => rule.is_active)
-        .map((rule) => {
-          const fee = rule.fee_amount ? ` ${rule.fee_amount}원` : "";
-          return `${rule.species_name} ${rule.cut_type} ${rule.fee_mode}${fee}`.trim();
-        }),
+      processing_rules_summary: processingRulesSummary.length
+        ? processingRulesSummary
+        : fallbackProcessingRulesSummary,
       cutoff_windows: [
         {
           fulfillment_type: "pickup",

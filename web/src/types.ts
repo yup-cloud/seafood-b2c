@@ -87,6 +87,8 @@ export interface PublicOrderPayload {
     unit_label: string;
     requested_cut_type?: string | null;
     packing_option?: string | null;
+    unit_price?: number | null;
+    estimated_total?: number | null;
   }>;
 }
 

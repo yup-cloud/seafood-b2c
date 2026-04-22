@@ -162,7 +162,7 @@ export function AdminDashboardPage() {
   }
 
   function handleParsePriceText() {
-    const parsed = parsePriceBoardNotice(pricePaste, board.board_date);
+    const parsed = parsePriceBoardNotice(pricePaste, getKoreaTodayDate());
 
     setParsedPreview({
       ...board,
@@ -237,7 +237,8 @@ export function AdminDashboardPage() {
   }
 
   async function handleLoadPreviousBoard() {
-    const previousDate = toDateOffset(board.board_date, -1);
+    const todayDate = getKoreaTodayDate();
+    const previousDate = toDateOffset(todayDate, -1);
     setIsLoadingPreviousBoard(true);
     setParseMessage("");
 
@@ -250,7 +251,7 @@ export function AdminDashboardPage() {
 
       const previousBoard: PriceBoardResponse = {
         ...board,
-        board_date: previousDate,
+        board_date: todayDate,
         items: previous.items
       };
 
@@ -265,7 +266,14 @@ export function AdminDashboardPage() {
   }
 
   async function handleApplyParsedBoard() {
-    const source = parsedPreview ?? parsePriceBoardNotice(pricePaste, board.board_date);
+    const source =
+      parsedPreview ??
+      (pricePaste.trim()
+        ? parsePriceBoardNotice(pricePaste, getKoreaTodayDate())
+        : {
+            ...board,
+            board_date: getKoreaTodayDate()
+          });
 
     if (!source.items.length) {
       setParseMessage("먼저 카톡 시세표를 붙여넣고 자동 추출을 눌러주세요.");
@@ -431,6 +439,13 @@ export function AdminDashboardPage() {
                 {isSavingBoard ? "반영 중..." : "오늘 시세로 반영"}
               </button>
             </div>
+          </div>
+          <div className="notice-panel customer-sync-notice">
+            <strong>고객 화면 반영 방식</strong>
+            <p>
+              오늘 시세로 반영하면 고객 홈과 주문 화면의 어종 선택 목록에 바로 적용됩니다. 고객 화면은 열려 있어도
+              최대 60초 안에 새 시세를 다시 불러옵니다.
+            </p>
           </div>
           {parseMessage ? <p className="helper-text">{parseMessage}</p> : null}
         </div>
@@ -823,6 +838,12 @@ function toDateOffset(dateText: string, offsetDays: number) {
   date.setDate(date.getDate() + offsetDays);
 
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function getKoreaTodayDate() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul"
+  }).format(new Date());
 }
 
 function resolveUrgentReason(order: AdminOrdersResponse["orders"][number]) {

@@ -40,8 +40,24 @@ export function HomePage() {
 
     void load();
 
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void load();
+      }
+    }, 60000);
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        void load();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       cancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
@@ -108,27 +124,39 @@ export function HomePage() {
       <div className="split-layout">
         <SectionCard
           title="오늘 준비 가능한 품목"
-          subtitle="원하시는 생선과 시세를 먼저 보고 편하게 주문해보세요."
+          subtitle="원하시는 생선과 시세를 먼저 보고, 바로 주문서에 담아 시작할 수 있습니다."
           action={<Link to="/customer/order" className="text-link">주문서 바로가기</Link>}
         >
           <div className="stack-list">
-            {board.items.map((item) => (
-              <div key={item.id ?? item.item_name} className="list-row">
-                <div>
-                  <strong>{item.item_name}</strong>
-                  <p>
-                    {item.origin_label ?? "원산지 미지정"} · {item.size_band ?? "규격 미지정"}
-                  </p>
+            {board.items.length ? (
+              board.items.map((item) => (
+                <div key={item.id ?? item.item_name} className="list-row">
+                  <div>
+                    <strong>{item.item_name}</strong>
+                    <p>
+                      {item.origin_label ?? "원산지 미지정"} · {item.size_band ?? "규격 미지정"}
+                    </p>
+                  </div>
+                  <div className="row-end">
+                    <strong>
+                      {formatCurrency(item.unit_price)}
+                      {item.unit_label === "kg" ? " / kg" : ""}
+                    </strong>
+                    <StatusBadge value={item.sale_status} />
+                    {item.sale_status !== "sold_out" ? (
+                      <Link
+                        className="secondary-button compact-button list-row-action"
+                        to={`/customer/order?item=${encodeURIComponent(item.item_name)}`}
+                      >
+                        이 품목 주문
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="row-end">
-                  <strong>
-                    {formatCurrency(item.unit_price)}
-                    {item.unit_label === "kg" ? " / kg" : ""}
-                  </strong>
-                  <StatusBadge value={item.sale_status} />
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div className="empty-order-card">관리자가 오늘 시세를 게시하면 이곳에 어종과 가격이 표시됩니다.</div>
+            )}
           </div>
         </SectionCard>
 
