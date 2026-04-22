@@ -83,7 +83,23 @@ function makeItemId() {
 
 function parseUnitPrice(value: string | null | undefined) {
   if (!value) return 0;
-  const digits = String(value).replace(/[^\d]/g, "");
+  const cleaned = String(value).trim().replace(/[^\d.,]/g, "");
+  if (!cleaned) return 0;
+
+  if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(cleaned)) {
+    return Math.round(Number(cleaned.replace(/,/g, "")));
+  }
+
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(cleaned)) {
+    return Math.round(Number(cleaned.replace(/\./g, "").replace(",", ".")));
+  }
+
+  if (/^\d+[.,]\d+$/.test(cleaned)) {
+    const parsed = Number(cleaned.replace(",", "."));
+    return Number.isFinite(parsed) ? Math.round(parsed) : 0;
+  }
+
+  const digits = cleaned.replace(/[^\d]/g, "");
   return digits ? Number(digits) : 0;
 }
 

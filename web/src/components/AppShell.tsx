@@ -14,6 +14,7 @@ export function AppShell({ children }: PropsWithChildren) {
   const [isAccessOpen, setIsAccessOpen] = useState(false);
   const [accessToken, setAccessToken] = useState("");
   const [accessError, setAccessError] = useState("");
+  const isAdminPath = location.pathname.startsWith("/admin");
 
   function closeAccessModal() {
     setIsAccessOpen(false);
@@ -61,18 +62,20 @@ export function AppShell({ children }: PropsWithChildren) {
         </nav>
       </header>
       <main className="page-frame">{children}</main>
-      <nav className="mobile-tabbar" aria-label="모바일 주요 메뉴">
-        {navigationItems.map((item) => (
-          <NavLink
-            key={`mobile-${item.to}`}
-            to={item.to}
-            className={({ isActive }) => `mobile-tabbar-link${isActive ? " active" : ""}`}
-          >
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
-      {!location.pathname.startsWith("/admin") ? (
+      {!isAdminPath ? (
+        <nav className="mobile-tabbar" aria-label="모바일 주요 메뉴">
+          {navigationItems.map((item) => (
+            <NavLink
+              key={`mobile-${item.to}`}
+              to={item.to}
+              className={({ isActive }) => `mobile-tabbar-link${isActive ? " active" : ""}`}
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+      ) : null}
+      {!isAdminPath ? (
         <button type="button" className="floating-admin-button" onClick={openAccessModal}>
           운영자
         </button>
