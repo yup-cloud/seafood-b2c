@@ -432,7 +432,9 @@ export const demoAdminOrderDetail: AdminOrderDetail = {
       quantity: "1",
       unit_label: "fish",
       requested_cut_type: "fillet",
-      packing_option: "기본 냉장 포장 / 프리미엄 숙성지 / 진공포장 원해요"
+      packing_option: "기본 냉장 포장 / 프리미엄 숙성지 / 진공포장 원해요",
+      unit_price: "18000",
+      estimated_total: "54000"
     }
   ],
   quote: {

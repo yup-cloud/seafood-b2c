@@ -162,6 +162,8 @@ export interface AdminOrderItem {
   unit_label: string;
   requested_cut_type: string | null;
   packing_option: string | null;
+  unit_price: string | null;
+  estimated_total: string | null;
 }
 
 export interface AdminOrderQuote {

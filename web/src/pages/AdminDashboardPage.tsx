@@ -4,7 +4,7 @@ import { MetricCard } from "../components/MetricCard";
 import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { demoAdminOrders, demoFulfillments, demoPaymentReview, demoPriceBoard, demoStore } from "../data/demo";
-import { api } from "../lib/api";
+import { api, type AdminOrderFilters } from "../lib/api";
 import {
   formatCurrency,
   formatDate,
@@ -29,6 +29,28 @@ const priceItemStatuses = [
   { value: "reserved_only", label: "예약문의" },
   { value: "sold_out", label: "품절" }
 ];
+
+type OrderQueueFilterKey = "all" | "unpaid" | "review" | "prep" | "matching" | "reservation";
+
+const orderQueueFilters: Array<{ key: OrderQueueFilterKey; label: string; filters: AdminOrderFilters }> = [
+  { key: "all", label: "전체", filters: {} },
+  { key: "unpaid", label: "입금대기", filters: { payment_status: "unpaid" } },
+  { key: "review", label: "입금검토", filters: { payment_status: "review_required" } },
+  { key: "prep", label: "손질준비", filters: { order_status: "ready_for_prep" } },
+  { key: "matching", label: "반마리", filters: { match_status: "matching_waiting" } },
+  { key: "reservation", label: "예약", filters: { is_reservation: "true" } }
+];
+
+const priceDraftStorageKey = "oneulbada-admin-price-draft-v1";
+
+function readPriceDraft(): { pricePaste: string; parsedPreview: PriceBoardResponse | null } | null {
+  try {
+    const raw = window.sessionStorage.getItem(priceDraftStorageKey);
+    return raw ? JSON.parse(raw) as { pricePaste: string; parsedPreview: PriceBoardResponse | null } : null;
+  } catch {
+    return null;
+  }
+}
 
 // ✅ 개선: 확인 모달 컴포넌트
 interface ConfirmDialogProps {
@@ -67,13 +89,14 @@ export function AdminDashboardPage() {
   const [board, setBoard] = useState<PriceBoardResponse>(demoPriceBoard);
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
+  const [orderFilter, setOrderFilter] = useState<OrderQueueFilterKey>("all");
   const [mode, setMode] = useState<"live" | "demo">("demo");
   const [noticeTemplate, setNoticeTemplate] = useState<NoticeTemplate>("compact");
   const [copyMessage, setCopyMessage] = useState("");
-  const [pricePaste, setPricePaste] = useState("");
+  const [pricePaste, setPricePaste] = useState(() => readPriceDraft()?.pricePaste ?? "");
   const [parseMessage, setParseMessage] = useState("");
   const [isSavingBoard, setIsSavingBoard] = useState(false);
-  const [parsedPreview, setParsedPreview] = useState<PriceBoardResponse | null>(null);
+  const [parsedPreview, setParsedPreview] = useState<PriceBoardResponse | null>(() => readPriceDraft()?.parsedPreview ?? null);
   const [isLoadingPreviousBoard, setIsLoadingPreviousBoard] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -82,14 +105,20 @@ export function AdminDashboardPage() {
   // ✅ 개선: 오늘 시세 반영 전 확인 다이얼로그
   const [showApplyConfirm, setShowApplyConfirm] = useState(false);
   const loadRef = useRef<((silent?: boolean) => Promise<void>) | null>(null);
+  const activeOrderFilter = orderQueueFilters.find((filter) => filter.key === orderFilter) ?? orderQueueFilters[0];
 
   // ✅ 버그 수정: load 함수를 useCallback으로 분리하여 직접 호출 가능하게 함
   const loadData = useCallback(
     async (silent = false) => {
       if (!silent) setIsRefreshing(true);
+      const searchFilter = deferredSearch.trim();
+      const activeFilters = orderQueueFilters.find((filter) => filter.key === orderFilter)?.filters ?? {};
       try {
         const [nextOrders, nextReviews, nextFulfillments, nextStore, nextBoard] = await Promise.all([
-          api.getAdminOrders(deferredSearch.trim() || undefined),
+          api.getAdminOrders({
+            ...activeFilters,
+            search: searchFilter || undefined
+          }),
           api.getPaymentReviewQueue(),
           api.getFulfillments(),
           api.getStore(),
@@ -104,16 +133,24 @@ export function AdminDashboardPage() {
         setMode("live");
         setLastRefreshed(new Date());
       } catch {
-        const lowered = deferredSearch.trim().toLowerCase();
-        const filteredOrders = !lowered
-          ? demoAdminOrders.orders
-          : demoAdminOrders.orders.filter((order) => {
+        const lowered = searchFilter.toLowerCase();
+        const filteredOrders = demoAdminOrders.orders
+          .filter((order) => {
+            if (activeFilters.payment_status && order.payment_status !== activeFilters.payment_status) return false;
+            if (activeFilters.fulfillment_status && order.fulfillment_status !== activeFilters.fulfillment_status) return false;
+            if (activeFilters.order_status && order.order_status !== activeFilters.order_status) return false;
+            if (activeFilters.match_status && order.match_status !== activeFilters.match_status) return false;
+            if (activeFilters.is_reservation && String(order.is_reservation) !== activeFilters.is_reservation) return false;
+            return true;
+          })
+          .filter((order) => {
+            if (!lowered) return true;
               return (
                 order.order_no.toLowerCase().includes(lowered) ||
                 order.customer_name.toLowerCase().includes(lowered) ||
                 (order.item_summary ?? "").toLowerCase().includes(lowered)
               );
-            });
+          });
 
         setOrdersResponse({ ...demoAdminOrders, orders: filteredOrders });
         setReviewQueue(demoPaymentReview);
@@ -126,7 +163,7 @@ export function AdminDashboardPage() {
         setIsRefreshing(false);
       }
     },
-    [deferredSearch]
+    [deferredSearch, orderFilter]
   );
 
   // loadRef에 최신 loadData 저장 (interval 등에서 stale closure 방지)
@@ -158,7 +195,7 @@ export function AdminDashboardPage() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deferredSearch, refreshKey]);
+  }, [deferredSearch, orderFilter, refreshKey]);
 
   // ✅ 개선: 복사 메시지 4초 후 자동 소멸
   useEffect(() => {
@@ -166,6 +203,25 @@ export function AdminDashboardPage() {
     const timer = setTimeout(() => setCopyMessage(""), 4000);
     return () => clearTimeout(timer);
   }, [copyMessage]);
+
+  useEffect(() => {
+    const hasDraft = pricePaste.trim() || parsedPreview;
+    try {
+      if (!hasDraft) {
+        window.sessionStorage.removeItem(priceDraftStorageKey);
+        return;
+      }
+      window.sessionStorage.setItem(
+        priceDraftStorageKey,
+        JSON.stringify({
+          pricePaste,
+          parsedPreview
+        })
+      );
+    } catch {
+      // sessionStorage가 막힌 환경에서는 임시저장만 건너뜁니다.
+    }
+  }, [pricePaste, parsedPreview]);
 
   const waitingPaymentCount = ordersResponse.orders.filter((order) => order.payment_status === "unpaid").length;
   const prepCount = ordersResponse.orders.filter((order) => order.order_status === "ready_for_prep").length;
@@ -797,7 +853,21 @@ export function AdminDashboardPage() {
       </SectionCard>
 
       <div id="admin-order-queue" className="split-layout admin-layout">
-        <SectionCard title="주문 목록" subtitle="지금 가장 먼저 처리해야 할 주문">
+        <SectionCard title="주문 목록" subtitle={`현재 필터: ${activeOrderFilter.label}`}>
+          <div className="order-filter-chips" role="tablist" aria-label="주문 상태 필터">
+            {orderQueueFilters.map((filter) => (
+              <button
+                key={filter.key}
+                type="button"
+                className={`order-filter-chip${orderFilter === filter.key ? " active" : ""}`}
+                onClick={() => setOrderFilter(filter.key)}
+                role="tab"
+                aria-selected={orderFilter === filter.key}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
           <div className="table-wrap">
             <table className="data-table">
               <thead>
@@ -811,7 +881,7 @@ export function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {ordersResponse.orders.map((order) => (
+                {ordersResponse.orders.length ? ordersResponse.orders.map((order) => (
                   <tr key={order.id}>
                     <td>
                       <strong>{order.order_no}</strong>
@@ -838,7 +908,13 @@ export function AdminDashboardPage() {
                       </Link>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={6}>
+                      <p className="helper-text">현재 필터에 해당하는 주문이 없습니다.</p>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

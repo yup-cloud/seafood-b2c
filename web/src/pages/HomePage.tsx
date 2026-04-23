@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
-import { demoPriceBoard, demoStore } from "../data/demo";
+import { demoHalfOrderDemands, demoPriceBoard, demoStore } from "../data/demo";
 import { api } from "../lib/api";
 import { formatCurrency, formatDate, formatItemName, formatProcessingRuleSummary } from "../lib/format";
 import { PriceBoardResponse, StoreInfo } from "../types";
@@ -149,6 +149,43 @@ export function HomePage() {
             <strong>예약 주문</strong>
             <p>{board.order_guide.reservation_deposit_policy ?? "예약 주문은 확보 가능 여부를 먼저 확인한 뒤 진행합니다."}</p>
           </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="반마리 요청 현황"
+        subtitle="한 마리가 부담스러운 품목은 현재 요청 흐름을 보고 바로 반마리로 문의할 수 있습니다."
+        action={<Link to="/customer/order?half=1" className="text-link">반마리 주문하기</Link>}
+      >
+        <div className="half-demand-grid">
+          {demoHalfOrderDemands.map((demand) => (
+            <Link
+              key={demand.id}
+              className="half-demand-card clickable-card"
+              to={`/customer/order?half=1&item=${encodeURIComponent(demand.item_name)}`}
+            >
+              <div className="half-demand-head">
+                <div>
+                  <strong>{formatItemName(demand.item_name)}</strong>
+                  <p>
+                    {demand.origin_label ?? "원산지 확인"} · {demand.size_band ?? "크기 확인"}
+                  </p>
+                </div>
+                <StatusBadge value="half_request" />
+              </div>
+              <div className="half-demand-meta">
+                <span>{demand.waiting_count}팀 문의 중</span>
+                <span>{demand.fulfillment_hint}</span>
+                <span>{demand.urgency_label}</span>
+              </div>
+              {demand.unit_price ? (
+                <strong className="half-demand-price">
+                  {formatCurrency(demand.unit_price)} / kg
+                </strong>
+              ) : null}
+              {demand.note ? <p className="half-demand-note">{demand.note}</p> : null}
+            </Link>
+          ))}
         </div>
       </SectionCard>
 

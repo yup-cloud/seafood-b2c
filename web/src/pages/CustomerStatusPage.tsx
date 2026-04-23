@@ -9,6 +9,26 @@ import { PublicOrderStatus } from "../types";
 
 const statusFlow = ["pricing_pending", "waiting_payment", "ready_for_prep", "completed"];
 
+async function copyTextToClipboard(text: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+  if (!copied) {
+    throw new Error("copy_failed");
+  }
+}
+
 export function CustomerStatusPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [orderNoInput, setOrderNoInput] = useState(searchParams.get("orderNo") ?? "");
@@ -16,6 +36,7 @@ export function CustomerStatusPage() {
   const [message, setMessage] = useState("");
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [copyMessage, setCopyMessage] = useState("");
   // ✅ 개선: 데모 상태 여부를 별도로 추적
   const [isDemo, setIsDemo] = useState(false);
   const hasDirectLinkToken = Boolean(searchParams.get("token"));
@@ -119,6 +140,18 @@ export function CustomerStatusPage() {
       setLastUpdatedAt(new Date().toISOString());
     } finally {
       setRefreshing(false);
+    }
+  }
+
+  async function handleCopyBankAccount() {
+    if (!order) return;
+    const bankGuide = order.bank_guide;
+    const copyText = `${bankGuide.bank_name} ${bankGuide.bank_account} 예금주 ${bankGuide.bank_holder}`;
+    try {
+      await copyTextToClipboard(copyText);
+      setCopyMessage("계좌번호를 복사했습니다.");
+    } catch {
+      setCopyMessage("자동 복사가 되지 않았습니다. 계좌번호를 직접 길게 눌러 복사해 주세요.");
     }
   }
 
@@ -245,6 +278,12 @@ export function CustomerStatusPage() {
                     {order.bank_guide.bank_name} {order.bank_guide.bank_account}
                   </p>
                   <p>예금주 {order.bank_guide.bank_holder}</p>
+                  <div className="bank-guide-actions">
+                    <button type="button" className="secondary-button compact-button" onClick={handleCopyBankAccount}>
+                      계좌번호 복사
+                    </button>
+                  </div>
+                  {copyMessage ? <small className="copy-feedback" aria-live="polite">{copyMessage}</small> : null}
                   {/* ✅ 개선: 미확인/대기 상태에서만 금액 강조 표시 */}
                   {order.payment_status === "unpaid" && order.quoted_amount ? (
                     <>

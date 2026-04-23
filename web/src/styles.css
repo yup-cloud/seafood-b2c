@@ -1734,6 +1734,26 @@ textarea:disabled {
   background: rgba(255, 255, 255, 0.96);
 }
 
+.half-demand-card.clickable-card {
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.half-demand-card.clickable-card:hover {
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.half-demand-price {
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
 .half-demand-head {
   display: flex;
   justify-content: space-between;
@@ -2852,6 +2872,27 @@ textarea:disabled {
   backdrop-filter: blur(18px);
 }
 
+.order-sticky-cta.pulse .primary-button {
+  animation: cta-pulse-once 0.95s ease;
+}
+
+@keyframes cta-pulse-once {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35);
+    transform: scale(1);
+  }
+
+  52% {
+    box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
+    transform: scale(1.025);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+    transform: scale(1);
+  }
+}
+
 .order-sticky-copy {
   display: grid;
   gap: 3px;
@@ -2938,6 +2979,24 @@ textarea:disabled {
   box-shadow: 0 14px 34px rgba(37, 99, 235, 0.14);
 }
 
+.fulfillment-card b {
+  color: #0f172a;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.fulfillment-conflict-panel ul {
+  display: grid;
+  gap: 6px;
+  margin: 2px 0 4px;
+  padding-left: 18px;
+  color: #8b5a00;
+  font-weight: 700;
+  line-height: 1.45;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
 .market-item-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2986,6 +3045,17 @@ textarea:disabled {
   align-items: end;
 }
 
+.reservation-structured-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.1fr) minmax(140px, 0.8fr) minmax(150px, 0.8fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.reservation-add-button {
+  min-height: 52px;
+}
+
 .selected-order-list {
   display: grid;
   gap: 10px;
@@ -3020,12 +3090,13 @@ textarea:disabled {
 
 .selected-order-controls {
   display: grid;
-  grid-template-columns: 86px 130px auto;
+  grid-template-columns: 170px 150px auto;
   gap: 8px;
   align-items: end;
 }
 
-.selected-order-controls label {
+.selected-order-controls label,
+.selected-order-control-group {
   display: grid;
   gap: 5px;
   color: #64748b;
@@ -3043,6 +3114,65 @@ textarea:disabled {
   background: #fff;
   padding: 0 10px;
   color: #0f172a;
+}
+
+.selected-order-control-group.wide {
+  grid-column: 1 / -1;
+}
+
+.cut-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cut-option-card {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #0f172a;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cut-option-card strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.cut-option-card strong span {
+  display: inline-flex;
+  margin: 0;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+  font-size: 0.7rem;
+}
+
+.cut-option-card small {
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.cut-option-card.active {
+  border-color: rgba(37, 99, 235, 0.42);
+  background: #eff6ff;
+}
+
+.cut-option-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 .text-danger-button {
@@ -3301,7 +3431,25 @@ textarea:disabled {
   }
 
   .selected-order-controls {
-    grid-template-columns: 82px minmax(0, 1fr) auto;
+    grid-template-columns: minmax(150px, auto) minmax(0, 1fr) auto;
+  }
+
+  .reservation-structured-grid,
+  .time-slot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reservation-add-button {
+    grid-column: 1 / -1;
+  }
+
+  .selected-cart-item {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .selected-cart-item .quantity-stepper {
+    justify-self: start;
   }
 }
 
@@ -3360,15 +3508,43 @@ textarea:disabled {
   }
 
   .selected-order-controls {
-    grid-template-columns: 74px minmax(0, 1fr);
+    grid-template-columns: 1fr;
+  }
+
+  .cut-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .time-slot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .selected-order-controls .text-danger-button {
-    grid-column: 1 / -1;
     justify-self: end;
   }
 
+  .selected-cart-head {
+    align-items: flex-start;
+  }
+
+  .selected-cart-list {
+    gap: 7px;
+  }
+
+  .quantity-stepper {
+    width: 100%;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+  }
+
+  .quantity-stepper button {
+    width: 40px;
+  }
+
   .reservation-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .reservation-structured-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -3583,6 +3759,31 @@ textarea:disabled {
   line-height: 1.4;
 }
 
+.time-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.time-slot-button {
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 13px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+
+.time-slot-button.active {
+  border-color: rgba(37, 99, 235, 0.42);
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
 /* ── 전화번호 링크 ───────────────────────────────────────── */
 .phone-link {
   color: var(--blue-strong);
@@ -3699,11 +3900,17 @@ textarea:disabled {
 }
 
 .in-cart-indicator {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
   color: var(--blue-strong);
   font-size: 0.8rem;
   font-weight: 750;
   margin-top: 6px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(49, 130, 246, 0.1);
 }
 
 /* ── 예약 힌트 ───────────────────────────────────────────── */
@@ -3713,6 +3920,171 @@ textarea:disabled {
   font-size: 0.78rem;
   font-weight: 650;
   margin-top: 4px;
+  word-break: keep-all;
+}
+
+.sold-out-hint {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  font-weight: 750;
+}
+
+.bank-guide-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.copy-feedback {
+  color: var(--blue-strong);
+  font-weight: 750;
+}
+
+.order-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.order-filter-chip {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.order-filter-chip.active {
+  border-color: rgba(37, 99, 235, 0.32);
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* ── 선택 품목 패널 ─────────────────────────────────────── */
+.selected-cart-panel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(49, 130, 246, 0.18);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.98));
+}
+
+.selected-cart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.selected-cart-head div,
+.selected-cart-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.selected-cart-head strong,
+.selected-cart-main strong {
+  color: #0f172a;
+}
+
+.selected-cart-head span,
+.selected-cart-main span,
+.selected-cart-main small {
+  color: #64748b;
+  font-size: 0.84rem;
+  line-height: 1.35;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.selected-cart-main small {
+  color: #2563eb;
+  font-weight: 750;
+}
+
+.selected-cart-list {
+  display: grid;
+  gap: 8px;
+}
+
+.selected-cart-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 15px;
+  background: #ffffff;
+}
+
+.quantity-stepper {
+  display: inline-grid;
+  grid-template-columns: 34px minmax(64px, auto) 34px;
+  align-items: center;
+  overflow: hidden;
+  min-height: 38px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
+  background: #f8fafc;
+}
+
+.quantity-stepper button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 38px;
+  border: 0;
+  background: transparent;
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.quantity-stepper button:disabled {
+  cursor: not-allowed;
+  color: #cbd5e1;
+}
+
+.quantity-stepper strong {
+  min-width: 0;
+  padding: 0 8px;
+  color: #0f172a;
+  font-size: 0.88rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.cart-remove-button {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.bulk-order-hint {
+  display: block;
+  color: #8b5a00;
+  font-size: 0.76rem;
+  font-weight: 750;
+  line-height: 1.35;
   word-break: keep-all;
 }
 

@@ -37,26 +37,63 @@ interface SelectedOrderItem {
   requested_cut_type: string;
 }
 
+interface FulfillmentConflict {
+  targetType: string;
+  conflicts: Array<{
+    id: string;
+    itemName: string;
+    fromCut: string;
+    toCut: string;
+  }>;
+}
+
 type TouchedFields = Partial<Record<keyof OrderFormState, boolean>>;
 
 const orderSteps = [
   { title: "어종 선택", description: "오늘 시세에서 담거나 예약 품목을 적습니다." },
-  { title: "손질/수량", description: "몇 마리인지, 어떻게 손질할지 정합니다." },
-  { title: "수령 방식", description: "픽업, 퀵, 택배 중 하나를 고릅니다." },
+  { title: "수령 방식", description: "픽업, 퀵, 택배 중 하나를 먼저 고릅니다." },
+  { title: "손질/수량", description: "수령 방식에 맞는 손질과 수량을 정합니다." },
   { title: "연락처/수령 정보", description: "금액 안내와 수령에 필요한 정보만 입력합니다." },
   { title: "최종 확인", description: "예상 금액과 주문 내용을 마지막으로 확인합니다." }
 ];
 
 const cutTypeLabels: Record<string, string> = {
-  whole: "원물 그대로",
-  raw: "원물 그대로",
-  fillet: "포 뜨기",
+  whole: "원물",
+  raw: "원물",
+  fillet: "필렛",
   sashimi: "회 손질",
-  round: "원물 그대로",
+  round: "원물",
   steak: "토막 손질",
   masukawa: "마스까와",
   sekkoshi: "세꼬시"
 };
+
+const cutTypeDescriptions: Record<string, string> = {
+  whole: "손질 없이 통째로",
+  raw: "손질 없이 통째로",
+  fillet: "뼈 제거, 포 뜬 상태 · 택배 가능",
+  sashimi: "먹기 좋게 썰어드림 · 당일 수령 권장",
+  round: "손질 없이 통째로",
+  steak: "조리하기 좋게 토막 손질",
+  masukawa: "껍질 제거 후 회 손질",
+  sekkoshi: "잔뼈째 얇게 써는 방식"
+};
+
+const fulfillmentChoiceDetails: Record<string, { cost: string; timing: string }> = {
+  pickup: { cost: "운임 없음", timing: "방문 시간만 알려주세요" },
+  quick: { cost: "8,000~18,000원", timing: "당일 최소 2~3시간" },
+  parcel: { cost: "7,000~18,000원", timing: "당일 9시 30분 전" }
+};
+
+const timeSlotOptions = [
+  { label: "오전 10시", value: "오전 10시 전후" },
+  { label: "오전 11시", value: "오전 11시 전후" },
+  { label: "정오", value: "정오 전후" },
+  { label: "오후 2시", value: "오후 2시 전후" },
+  { label: "오후 4시", value: "오후 4시 전후" },
+  { label: "오후 6시", value: "오후 6시 전후" },
+  { label: "저녁 7시 이후", value: "저녁 7시 이후" }
+];
 
 const initialForm: OrderFormState = {
   customer_name: "",
@@ -78,6 +115,12 @@ const initialForm: OrderFormState = {
 
 function getKoreaTodayDate() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
+}
+
+function getKoreaTomorrowDate() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(tomorrow);
 }
 
 function makeItemId() {
@@ -134,6 +177,34 @@ function formatPriceRange(min: number, max: number) {
   return `${formatCurrency(Math.round(min))} ~ ${formatCurrency(Math.round(max))}`;
 }
 
+function formatUnitPriceLabel(value: string | null, unitLabel: string) {
+  const numericUnitPrice = parseUnitPrice(value);
+  if (!numericUnitPrice) return "시세 확인";
+  return `${formatCurrency(numericUnitPrice)}${unitLabel === "kg" ? " / kg" : ""}`;
+}
+
+function formatQuantityLabel(quantity: number) {
+  const normalized = Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(1);
+  return `${normalized}마리`;
+}
+
+function formatReservationDateLabel(date: string) {
+  if (!date) return "";
+  const [, month, day] = date.split("-");
+  if (!month || !day) return date;
+  return `${Number(month)}월 ${Number(day)}일 희망`;
+}
+
+function serializeReservationItemName(itemName: string, size: string, date: string) {
+  return [
+    formatItemName(itemName),
+    size.trim(),
+    formatReservationDateLabel(date)
+  ]
+    .filter(Boolean)
+    .join(" / ");
+}
+
 function buildSelectedItem(boardItem: PriceBoardItem, quantity: number, cutType = "fillet"): SelectedOrderItem {
   return {
     id: makeItemId(),
@@ -180,6 +251,12 @@ function formatPhone(raw: string) {
   return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
 }
 
+function isValidPhoneNumber(raw: string) {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("010")) return digits.length === 11;
+  return digits.length >= 10 && digits.length <= 11;
+}
+
 export function CustomerOrderPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -190,10 +267,16 @@ export function CustomerOrderPage() {
   const [touched, setTouched] = useState<TouchedFields>({});
   const [items, setItems] = useState<SelectedOrderItem[]>([]);
   const [reservationItemName, setReservationItemName] = useState("");
+  const [reservationItemSize, setReservationItemSize] = useState("");
+  const [reservationItemDate, setReservationItemDate] = useState("");
   const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [hasEditedDepositorName, setHasEditedDepositorName] = useState(false);
+  const [highlightNextCta, setHighlightNextCta] = useState(false);
+  const [fulfillmentConflict, setFulfillmentConflict] = useState<FulfillmentConflict | null>(null);
   const stepBodyRef = useRef<HTMLDivElement>(null);
+  const selectedItemsRef = useRef<SelectedOrderItem[]>([]);
 
   const unitQuantity = form.purchase_unit === "half_request" ? 0.5 : 1;
   const cutTypes = options.cut_types.length ? options.cut_types : ["whole", "fillet", "sashimi"];
@@ -202,6 +285,10 @@ export function CustomerOrderPage() {
   const isDelivery = form.fulfillment_type === "quick" || form.fulfillment_type === "parcel";
   const hasParcelSashimi = form.fulfillment_type === "parcel" && items.some((item) => item.requested_cut_type === "sashimi");
   const currentStepError = getStepError(currentStep);
+
+  useEffect(() => {
+    selectedItemsRef.current = items;
+  }, [items]);
 
   const estimates = useMemo(() => {
     const itemRange = items.reduce(
@@ -237,6 +324,43 @@ export function CustomerOrderPage() {
     };
   }, [form.fulfillment_subtype, form.fulfillment_type, items]);
 
+  function syncSelectedItemsWithBoard(nextBoard: PriceBoardResponse) {
+    const selectedItems = selectedItemsRef.current;
+    if (!selectedItems.length) return;
+
+    const boardItemMap = new Map(
+      nextBoard.items.map((item) => [formatItemName(item.item_name), item])
+    );
+    const newlySoldOutNames = selectedItems
+      .filter((item) => {
+        const latest = boardItemMap.get(formatItemName(item.item_name));
+        return latest?.sale_status === "sold_out" && item.sale_status !== "sold_out";
+      })
+      .map((item) => formatItemName(item.item_name));
+
+    setItems((current) =>
+      current.map((item) => {
+        const latest = boardItemMap.get(formatItemName(item.item_name));
+        if (!latest) return item;
+
+        return {
+          ...item,
+          origin_label: latest.origin_label,
+          size_band: latest.size_band,
+          unit_price: latest.unit_price,
+          unit_label: latest.unit_label,
+          sale_status: latest.sale_status
+        };
+      })
+    );
+
+    if (newlySoldOutNames.length) {
+      setSubmitMessage(
+        `${newlySoldOutNames.join(", ")} 품목이 방금 품절로 바뀌었습니다. 해당 품목을 삭제하거나 예약 주문으로 문의해 주세요.`
+      );
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -250,6 +374,7 @@ export function CustomerOrderPage() {
         setStore(nextStore);
         setBoard(nextBoard);
         setOptions(nextOptions);
+        syncSelectedItemsWithBoard(nextBoard);
         setForm((current) => ({
           ...current,
           fulfillment_type: current.fulfillment_type || nextOptions.fulfillment_types[0] || initialForm.fulfillment_type,
@@ -260,6 +385,7 @@ export function CustomerOrderPage() {
         setStore(demoStore);
         setBoard(demoPriceBoard);
         setOptions(demoOrderOptions);
+        syncSelectedItemsWithBoard(demoPriceBoard);
       }
     }
     void load();
@@ -303,7 +429,7 @@ export function CustomerOrderPage() {
       setCurrentStep(1);
     }
 
-    setSubmitMessage("품목을 담았습니다. 손질 방식, 수령 방식, 연락처를 확인해 주세요.");
+    setSubmitMessage("품목을 담았습니다. 수령 방식, 손질, 연락처 순서로 확인해 주세요.");
     setSearchParams({}, { replace: true });
   }, [board.items, searchParams, setSearchParams]);
 
@@ -312,9 +438,33 @@ export function CustomerOrderPage() {
   }, [currentStep]);
 
   function updateField<K extends keyof OrderFormState>(key: K, value: OrderFormState[K]) {
+    if (key === "fulfillment_type" && value === "parcel") {
+      const conflicts = items
+        .filter((item) => item.requested_cut_type === "sashimi")
+        .map((item) => ({
+          id: item.id,
+          itemName: formatItemName(item.item_name),
+          fromCut: cutTypeLabels[item.requested_cut_type] ?? formatStatusLabel(item.requested_cut_type),
+          toCut: cutTypeLabels.fillet
+        }));
+
+      if (conflicts.length) {
+        setTouched((prev) => ({ ...prev, [key]: true }));
+        setFulfillmentConflict({ targetType: "parcel", conflicts });
+        setSubmitMessage("");
+        return;
+      }
+    }
+
     setTouched((prev) => ({ ...prev, [key]: true }));
     setForm((current) => {
       const next = { ...current, [key]: value };
+      if (key === "order_flow") {
+        next.requested_date = value === "reservation" ? getKoreaTomorrowDate() : getKoreaTodayDate();
+      }
+      if (key === "customer_name" && !hasEditedDepositorName) {
+        next.depositor_name = String(value);
+      }
       if (key === "fulfillment_type") {
         next.fulfillment_subtype = value === "parcel" ? current.fulfillment_subtype || parcelSubtypes[0] : "";
       }
@@ -331,19 +481,10 @@ export function CustomerOrderPage() {
       );
     }
 
-    if (key === "fulfillment_type" && value === "parcel") {
-      setItems((current) =>
-        current.map((item) => ({
-          ...item,
-          requested_cut_type: item.requested_cut_type === "sashimi" ? "fillet" : item.requested_cut_type
-        }))
-      );
-      setSubmitMessage("택배는 회 손질 접수가 어려워 포 뜨기 기준으로 안내됩니다.");
-    } else if (key !== "fulfillment_type") {
-      setSubmitMessage("");
-    } else {
-      setSubmitMessage("");
+    if (key === "fulfillment_type") {
+      setFulfillmentConflict(null);
     }
+    setSubmitMessage("");
   }
 
   function updatePhoneField(key: "customer_phone" | "receiver_phone", raw: string) {
@@ -351,8 +492,39 @@ export function CustomerOrderPage() {
     setForm((current) => ({ ...current, [key]: formatPhone(raw) }));
   }
 
+  function updateDepositorField(value: string) {
+    setHasEditedDepositorName(value.trim().length > 0 && value.trim() !== form.customer_name.trim());
+    updateField("depositor_name", value);
+  }
+
   function touchField(key: keyof OrderFormState) {
     setTouched((prev) => ({ ...prev, [key]: true }));
+  }
+
+  function applyFulfillmentConflict() {
+    if (!fulfillmentConflict) return;
+    setForm((current) => ({
+      ...current,
+      fulfillment_type: fulfillmentConflict.targetType,
+      fulfillment_subtype:
+        fulfillmentConflict.targetType === "parcel" ? current.fulfillment_subtype || parcelSubtypes[0] : ""
+    }));
+    const conflictIds = new Set(fulfillmentConflict.conflicts.map((conflict) => conflict.id));
+    setItems((current) =>
+      current.map((item) => (
+        conflictIds.has(item.id)
+          ? { ...item, requested_cut_type: "fillet" }
+          : item
+      ))
+    );
+    setFulfillmentConflict(null);
+    setSubmitMessage("");
+    setCurrentStep(2);
+  }
+
+  function cancelFulfillmentConflict() {
+    setFulfillmentConflict(null);
+    setSubmitMessage("");
   }
 
   function addBoardItem(boardItem: PriceBoardItem) {
@@ -360,6 +532,7 @@ export function CustomerOrderPage() {
       setSubmitMessage("품절 품목은 바로 주문할 수 없습니다. 예약 주문으로 문의해 주세요.");
       return;
     }
+    const firstItem = items.length === 0;
     setItems((current) => {
       const displayName = formatItemName(boardItem.item_name);
       const existing = current.find((item) => item.item_name === displayName);
@@ -370,6 +543,10 @@ export function CustomerOrderPage() {
           : item
       );
     });
+    if (firstItem) {
+      setHighlightNextCta(true);
+      window.setTimeout(() => setHighlightNextCta(false), 1200);
+    }
     setSubmitMessage("");
   }
 
@@ -379,8 +556,16 @@ export function CustomerOrderPage() {
       setSubmitMessage("예약 문의할 품목명을 입력해 주세요.");
       return;
     }
-    setItems((current) => [...current, buildCustomItem(trimmedName, unitQuantity)]);
+    const firstItem = items.length === 0;
+    const serializedItemName = serializeReservationItemName(trimmedName, reservationItemSize, reservationItemDate);
+    setItems((current) => [...current, buildCustomItem(serializedItemName, unitQuantity)]);
     setReservationItemName("");
+    setReservationItemSize("");
+    setReservationItemDate("");
+    if (firstItem) {
+      setHighlightNextCta(true);
+      window.setTimeout(() => setHighlightNextCta(false), 1200);
+    }
     setSubmitMessage("");
     setCurrentStep(1);
   }
@@ -389,13 +574,42 @@ export function CustomerOrderPage() {
     setItems((current) => current.filter((item) => item.id !== itemId));
   }
 
+  function clearAllItems() {
+    if (!items.length) return;
+    if (!window.confirm("담은 품목을 모두 비울까요?")) return;
+    setItems([]);
+    setSubmitMessage("");
+  }
+
   function updateItem(itemId: string, updates: Partial<SelectedOrderItem>) {
     setItems((current) => current.map((item) => (item.id === itemId ? { ...item, ...updates } : item)));
   }
 
+  function getMinimumQuantity() {
+    return form.purchase_unit === "half_request" ? 0.5 : 1;
+  }
+
+  function normalizeQuantity(quantity: number) {
+    const minimum = getMinimumQuantity();
+    if (!Number.isFinite(quantity)) return minimum;
+    const rounded =
+      form.purchase_unit === "half_request"
+        ? Number((Math.round(quantity * 2) / 2).toFixed(1))
+        : Math.round(quantity);
+    return Math.max(minimum, rounded);
+  }
+
+  function adjustItemQuantity(itemId: string, delta: number) {
+    setItems((current) =>
+      current.map((item) =>
+        item.id === itemId ? { ...item, quantity: normalizeQuantity(item.quantity + delta) } : item
+      )
+    );
+  }
+
   function handleCutChange(itemId: string, nextCutType: string) {
     if (form.fulfillment_type === "parcel" && nextCutType === "sashimi") {
-      setSubmitMessage("택배는 회 손질을 선택할 수 없습니다. 포 뜨기 또는 원물 그대로 접수해 주세요.");
+      setSubmitMessage("택배는 회 손질을 선택할 수 없습니다. 필렛 또는 원물로 접수해 주세요.");
       return;
     }
     updateItem(itemId, { requested_cut_type: nextCutType });
@@ -405,20 +619,25 @@ export function CustomerOrderPage() {
   function getStepError(stepIndex: number): string {
     if (stepIndex === 0 && !items.length) return "주문할 어종을 먼저 담아 주세요.";
     if (stepIndex === 1) {
-      if (!items.length) return "주문할 어종을 먼저 담아 주세요.";
-      if (items.some((item) => item.quantity < 0.5)) return "반마리는 0.5, 한 마리는 1 기준으로 접수됩니다.";
-      if (hasParcelSashimi) return "택배는 회 손질을 선택할 수 없습니다. 포 뜨기 또는 원물 그대로 변경해 주세요.";
-    }
-    if (stepIndex === 2) {
       if (!form.fulfillment_type) return "수령 방식을 선택해 주세요.";
       if (form.fulfillment_type === "parcel" && !form.fulfillment_subtype) return "택배 종류를 선택해 주세요.";
-      if (hasParcelSashimi) return "택배는 회 손질을 선택할 수 없습니다. 포 뜨기 또는 원물 그대로 변경해 주세요.";
+      if (fulfillmentConflict) return "수령 방식 변경 안내를 먼저 확인해 주세요.";
+    }
+    if (stepIndex === 2) {
+      if (!items.length) return "주문할 어종을 먼저 담아 주세요.";
+      if (items.some((item) => item.sale_status === "sold_out"))
+        return "품절로 바뀐 품목이 있습니다. 삭제하거나 예약 주문으로 문의해 주세요.";
+      if (items.some((item) => item.quantity < 0.5)) return "반마리는 0.5, 한 마리는 1 기준으로 접수됩니다.";
+      if (hasParcelSashimi) return "택배는 회 손질을 선택할 수 없습니다. 필렛 또는 원물로 변경해 주세요.";
     }
     if (stepIndex === 3) {
       if (!form.customer_name.trim() || !form.customer_phone.trim()) return "주문자 성함과 연락처를 입력해 주세요.";
+      if (!isValidPhoneNumber(form.customer_phone)) return "주문자 연락처를 정확히 입력해 주세요. 010 휴대폰은 11자리여야 합니다.";
       if (!form.requested_date.trim() || !form.requested_time_slot.trim()) return "희망 날짜와 시간을 입력해 주세요.";
       if (isDelivery && (!form.receiver_name.trim() || !form.receiver_phone.trim()))
         return "퀵/택배는 수령인명과 수령인 연락처가 필요합니다.";
+      if (isDelivery && !isValidPhoneNumber(form.receiver_phone))
+        return "수령인 연락처를 정확히 입력해 주세요. 010 휴대폰은 11자리여야 합니다.";
       if (isDelivery && !form.address_line1.trim()) return "퀵/택배 수령 주소를 입력해 주세요.";
       if (form.fulfillment_type === "parcel" && !form.postal_code.trim()) return "택배 수령에는 우편번호가 필요합니다.";
     }
@@ -521,6 +740,87 @@ export function CustomerOrderPage() {
     return touched[field] && !form[field]?.toString().trim() ? message : null;
   }
 
+  function phoneFieldError(field: "customer_phone" | "receiver_phone", emptyMessage: string): string | null {
+    if (!touched[field]) return null;
+    if (!form[field].trim()) return emptyMessage;
+    if (!isValidPhoneNumber(form[field])) return "연락처를 정확히 입력해 주세요. 010 휴대폰은 11자리여야 합니다.";
+    return null;
+  }
+
+  function renderSelectedCartPanel() {
+    if (!items.length) return null;
+
+    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+
+    return (
+      <div className="selected-cart-panel" aria-label="담은 품목">
+        <div className="selected-cart-head">
+          <div>
+            <strong>담은 품목</strong>
+            <span>{items.length}종 · 총 {formatQuantityLabel(totalQuantity)}</span>
+          </div>
+          <button
+            type="button"
+            className="text-link danger"
+            onClick={clearAllItems}
+            aria-label="담은 품목 전체 비우기"
+          >
+            전체 비우기
+          </button>
+        </div>
+
+        <div className="selected-cart-list">
+          {items.map((item) => {
+            const estimate = estimateItemTotal(item);
+            const displayName = formatItemName(item.item_name);
+            return (
+              <article key={item.id} className="selected-cart-item">
+                <div className="selected-cart-main">
+                  <strong>{displayName}</strong>
+                  <span>
+                    {item.origin_label ?? "원산지 확인"} · {item.size_band ?? "크기 확인"}
+                  </span>
+                  <small>
+                    {estimate ? `예상 ${formatPriceRange(estimate.min, estimate.max)}` : "금액 확인 후 안내"}
+                  </small>
+                </div>
+                <div className="quantity-stepper" aria-label={`${displayName} 수량 조절`}>
+                  <button
+                    type="button"
+                    onClick={() => adjustItemQuantity(item.id, -unitQuantity)}
+                    disabled={item.quantity <= getMinimumQuantity()}
+                    aria-label={`${displayName} 수량 줄이기`}
+                  >
+                    -
+                  </button>
+                  <strong>{formatQuantityLabel(item.quantity)}</strong>
+                  <button
+                    type="button"
+                    onClick={() => adjustItemQuantity(item.id, unitQuantity)}
+                    aria-label={`${displayName} 수량 늘리기`}
+                  >
+                    +
+                  </button>
+                </div>
+                {item.quantity >= 3 ? (
+                  <small className="bulk-order-hint">대량 주문은 전화 문의를 권장합니다.</small>
+                ) : null}
+                <button
+                  type="button"
+                  className="cart-remove-button"
+                  onClick={() => removeItem(item.id)}
+                  aria-label={`${displayName} 삭제`}
+                >
+                  삭제
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   function renderStepBody() {
     // ─────────────────────────────────────────
     // STEP 0: 어종 선택
@@ -581,7 +881,7 @@ export function CustomerOrderPage() {
               {form.purchase_unit === "half_request" ? (
                 <div className="order-warning-panel">
                   <strong>반마리 주문 안내</strong>
-                  <p>반마리는 매칭 여부를 먼저 확인한 뒤 진행합니다. 접수 후 가능 여부를 안내합니다.</p>
+                  <p>반마리 매칭 여부는 보통 당일 오전 중 확인 후 안내드려요. 매칭이 어려우면 한 마리 전체 구매로 안내드릴 수 있습니다.</p>
                 </div>
               ) : null}
             </div>
@@ -605,6 +905,7 @@ export function CustomerOrderPage() {
                     : " 이미 담긴 품목은 한 번 더 누르면 수량이 늘어납니다."}
                 </span>
               </div>
+              {renderSelectedCartPanel()}
               <div className="market-item-grid">
                 {board.items.length ? (
                   board.items.map((item) => {
@@ -628,16 +929,17 @@ export function CustomerOrderPage() {
                           {item.origin_label ?? "원산지 확인"} · {item.size_band ?? "크기 확인"}
                         </span>
                         <b>
-                          {formatCurrency(item.unit_price)}
-                          {item.unit_label === "kg" ? " / kg" : ""}
+                          {formatUnitPriceLabel(item.unit_price, item.unit_label)}
                         </b>
                         {item.reservable_flag && item.sale_status === "reserved_only" && item.reservation_cutoff_note ? (
                           <small className="reservation-hint">📋 {item.reservation_cutoff_note}</small>
+                        ) : item.sale_status === "sold_out" ? (
+                          <small className="sold-out-hint">품절 · 예약 주문으로 문의해 주세요</small>
                         ) : displayNote ? (
                           <small>{displayNote}</small>
                         ) : null}
                         {inCart ? (
-                          <span className="in-cart-indicator">✓ {inCart.quantity}마리 담김</span>
+                          <span className="in-cart-indicator">{formatQuantityLabel(inCart.quantity)} 담김 · 누르면 추가</span>
                         ) : null}
                       </button>
                     );
@@ -661,9 +963,9 @@ export function CustomerOrderPage() {
             <div className="order-stage-block">
               <div className="order-stage-note">
                 <strong>찾는 품목 직접 입력</strong>
-              <span>시세에 없는 품목도 문의명으로 남기면 확인 후 안내합니다. 예: 돌돔 2kg급, 참치 뱃살</span>
+                <span>시세에 없는 품목도 필요한 정보를 나눠 남기면 운영자가 더 빠르게 확인할 수 있습니다.</span>
               </div>
-              <div className="reservation-input-row">
+              <div className="reservation-structured-grid">
                 <label className="field-block">
                   <span>찾는 품목</span>
                   <input
@@ -679,27 +981,28 @@ export function CustomerOrderPage() {
                     autoFocus
                   />
                 </label>
-                <button type="button" className="primary-button" onClick={addReservationItem}>
+                <label className="field-block">
+                  <span>희망 크기</span>
+                  <input
+                    value={reservationItemSize}
+                    onChange={(event) => setReservationItemSize(event.target.value)}
+                    placeholder="예: 2kg급 (선택)"
+                  />
+                </label>
+                <label className="field-block">
+                  <span>원하는 날짜</span>
+                  <input
+                    type="date"
+                    value={reservationItemDate}
+                    onChange={(event) => setReservationItemDate(event.target.value)}
+                    min={getKoreaTomorrowDate()}
+                  />
+                </label>
+                <button type="button" className="primary-button reservation-add-button" onClick={addReservationItem}>
                   + 담기
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* ✅ 개선: 담은 품목 미리보기 */}
-          {items.length > 0 && (
-            <div className="cart-preview-bar">
-              <span>
-                담은 품목: {items.map((i) => `${formatItemName(i.item_name)} ×${i.quantity}`).join(", ")}
-              </span>
-              <button
-                type="button"
-                className="text-link danger"
-                onClick={() => setItems([])}
-                aria-label="장바구니 전체 비우기"
-              >
-                전체 비우기
-              </button>
+              {renderSelectedCartPanel()}
             </div>
           )}
         </SectionCard>
@@ -707,16 +1010,16 @@ export function CustomerOrderPage() {
     }
 
     // ─────────────────────────────────────────
-    // STEP 1: 손질/수량
+    // STEP 2: 손질/수량
     // ─────────────────────────────────────────
-    if (currentStep === 1) {
+    if (currentStep === 2) {
       return (
-        <SectionCard title="2. 손질/수량" subtitle="반마리는 0.5, 한 마리는 1 기준입니다. 택배는 회 손질이 불가합니다.">
+        <SectionCard title="3. 손질/수량" subtitle="반마리는 0.5, 한 마리는 1 기준입니다. 모르면 필렛을 선택하세요.">
           {/* ✅ 개선: 택배+회손질 조합 경고를 카드 상단에 명확히 표시 */}
           {hasParcelSashimi ? (
             <div className="order-warning-panel" role="alert">
               <strong>택배는 회 손질을 선택할 수 없습니다</strong>
-              <p>이동 시간이 있어 품질 유지가 어렵습니다. 회 손질 대신 포 뜨기 또는 원물 그대로 변경해 주세요.</p>
+              <p>이동 시간이 있어 품질 유지가 어렵습니다. 회 손질 대신 필렛 또는 원물로 변경해 주세요.</p>
             </div>
           ) : null}
 
@@ -741,37 +1044,58 @@ export function CustomerOrderPage() {
                       )}
                     </div>
                     <div className="selected-order-controls">
-                      <label>
+                      <div className="selected-order-control-group">
                         <span>수량</span>
-                        <input
-                          type="number"
-                          min="0.5"
-                          step="0.5"
-                          value={item.quantity}
-                          onChange={(event) =>
-                            updateItem(item.id, { quantity: Number(event.target.value || unitQuantity) })
-                          }
-                          aria-label={`${displayName} 수량`}
-                        />
-                      </label>
-                      <label>
+                        <div className="quantity-stepper" aria-label={`${displayName} 수량 조절`}>
+                          <button
+                            type="button"
+                            onClick={() => adjustItemQuantity(item.id, -unitQuantity)}
+                            disabled={item.quantity <= getMinimumQuantity()}
+                            aria-label={`${displayName} 수량 줄이기`}
+                          >
+                            -
+                          </button>
+                          <strong>{formatQuantityLabel(item.quantity)}</strong>
+                          <button
+                            type="button"
+                            onClick={() => adjustItemQuantity(item.id, unitQuantity)}
+                            aria-label={`${displayName} 수량 늘리기`}
+                          >
+                            +
+                          </button>
+                        </div>
+                        {item.quantity >= 3 ? (
+                          <small className="bulk-order-hint">대량 주문은 전화 문의를 권장합니다.</small>
+                        ) : null}
+                      </div>
+                      <div className="selected-order-control-group wide">
                         <span>손질</span>
-                        <select
-                          value={item.requested_cut_type}
-                          onChange={(event) => handleCutChange(item.id, event.target.value)}
-                          aria-label={`${displayName} 손질 방법`}
-                        >
+                        <div className="cut-card-grid" role="radiogroup" aria-label={`${displayName} 손질 방법`}>
                           {cutTypes.map((cutType) => {
                             const disabled = form.fulfillment_type === "parcel" && cutType === "sashimi";
+                            const active = item.requested_cut_type === cutType;
                             return (
-                              <option key={cutType} value={cutType} disabled={disabled}>
-                                {cutTypeLabels[cutType] ?? formatStatusLabel(cutType)}
-                                {disabled ? " (택배 불가)" : ""}
-                              </option>
+                              <button
+                                key={cutType}
+                                type="button"
+                                className={`cut-option-card${active ? " active" : ""}`}
+                                onClick={() => handleCutChange(item.id, cutType)}
+                                disabled={disabled}
+                                role="radio"
+                                aria-checked={active}
+                              >
+                                <strong>
+                                  {cutTypeLabels[cutType] ?? formatStatusLabel(cutType)}
+                                  {cutType === "fillet" ? <span>추천</span> : null}
+                                </strong>
+                                <small>
+                                  {disabled ? "택배 선택 시 불가" : cutTypeDescriptions[cutType] ?? "주문 내용 확인 후 안내"}
+                                </small>
+                              </button>
                             );
                           })}
-                        </select>
-                      </label>
+                        </div>
+                      </div>
                       <button
                         type="button"
                         className="text-danger-button"
@@ -800,34 +1124,58 @@ export function CustomerOrderPage() {
 
           <div className="order-warning-panel">
             <strong>손질 선택 기준</strong>
-            <p>바로 드실 예정이면 회 손질, 이동이나 보관이 있으면 포 뜨기를 권장합니다. 택배는 포 뜨기 또는 원물 그대로 접수해 주세요.</p>
+            <p>모르면 필렛을 선택하세요. 바로 드실 예정이면 회 손질, 이동이나 보관이 있으면 필렛을 권장합니다. 택배는 필렛 또는 원물로 접수해 주세요.</p>
           </div>
         </SectionCard>
       );
     }
 
     // ─────────────────────────────────────────
-    // STEP 2: 수령 방식
+    // STEP 1: 수령 방식
     // ─────────────────────────────────────────
-    if (currentStep === 2) {
+    if (currentStep === 1) {
       return (
-        <SectionCard title="3. 수령 방식" subtitle="받는 방식에 따라 필요한 정보와 마감 시간이 달라집니다.">
+        <SectionCard title="2. 수령 방식" subtitle="받는 방식에 따라 가능한 손질과 마감 시간이 달라집니다.">
           <div className="fulfillment-choice-grid">
-            {fulfillmentTypes.map((type) => (
-              <button
-                key={type}
-                type="button"
-                className={`simple-choice-card${form.fulfillment_type === type ? " active" : ""}`}
-                onClick={() => updateField("fulfillment_type", type)}
-              >
-                <strong>
-                  {type === "pickup" ? "🏪 " : type === "quick" ? "🛵 " : "📦 "}
-                  {formatStatusLabel(type)}
-                </strong>
-                <span>{fulfillmentCopy(type, board)}</span>
-              </button>
-            ))}
+            {fulfillmentTypes.map((type) => {
+              const detail = fulfillmentChoiceDetails[type] ?? { cost: "확인 후 안내", timing: fulfillmentCopy(type, board) };
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  className={`simple-choice-card fulfillment-card${form.fulfillment_type === type ? " active" : ""}`}
+                  onClick={() => updateField("fulfillment_type", type)}
+                >
+                  <strong>
+                    {type === "pickup" ? "매장 픽업" : type === "quick" ? "퀵" : "택배"}
+                  </strong>
+                  <b>{detail.cost}</b>
+                  <span>{detail.timing}</span>
+                </button>
+              );
+            })}
           </div>
+
+          {fulfillmentConflict ? (
+            <div className="order-warning-panel fulfillment-conflict-panel" role="alert">
+              <strong>택배로 변경하면 아래 품목의 손질이 바뀝니다</strong>
+              <ul>
+                {fulfillmentConflict.conflicts.map((conflict) => (
+                  <li key={conflict.id}>
+                    {conflict.itemName} — {conflict.fromCut} → {conflict.toCut}으로 변경됩니다
+                  </li>
+                ))}
+              </ul>
+              <div className="button-row">
+                <button type="button" className="primary-button compact-button" onClick={applyFulfillmentConflict}>
+                  계속 진행
+                </button>
+                <button type="button" className="secondary-button compact-button" onClick={cancelFulfillmentConflict}>
+                  수령방식 다시 선택
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           {form.fulfillment_type === "parcel" ? (
             <div className="delivery-fields">
@@ -846,7 +1194,7 @@ export function CustomerOrderPage() {
               </label>
               <div className="order-warning-panel">
                 <strong>택배 손질 제한</strong>
-                <p>택배는 이동 시간이 있어 회 손질 대신 포 뜨기 또는 원물 그대로 접수를 권장합니다.</p>
+                <p>택배는 이동 시간이 있어 회 손질 대신 필렛 또는 원물 접수를 권장합니다.</p>
               </div>
             </div>
           ) : null}
@@ -883,7 +1231,20 @@ export function CustomerOrderPage() {
                 <span className="field-error" role="alert">{fieldError("customer_name", "성함을 입력해 주세요.")}</span>
               ) : null}
             </label>
-            <label className={`field-block${touched.customer_phone && !form.customer_phone.trim() ? " has-error" : ""}`}>
+            <label className="field-block">
+              <span>입금자명</span>
+              <input
+                value={form.depositor_name}
+                onChange={(event) => updateDepositorField(event.target.value)}
+                placeholder="주문자명과 다를 경우에만 입력"
+                autoComplete="name"
+              />
+              <span className="field-hint">예: 배우자나 가족이 대신 입금하는 경우</span>
+            </label>
+          </div>
+
+          <div className="form-grid two">
+            <label className={`field-block${phoneFieldError("customer_phone", "연락처를 입력해 주세요.") ? " has-error" : ""}`}>
               <span>주문자 연락처 <span className="required-mark">*</span></span>
               <input
                 value={form.customer_phone}
@@ -894,13 +1255,10 @@ export function CustomerOrderPage() {
                 autoComplete="tel"
                 aria-required="true"
               />
-              {fieldError("customer_phone", "연락처를 입력해 주세요.") ? (
-                <span className="field-error" role="alert">{fieldError("customer_phone", "연락처를 입력해 주세요.")}</span>
+              {phoneFieldError("customer_phone", "연락처를 입력해 주세요.") ? (
+                <span className="field-error" role="alert">{phoneFieldError("customer_phone", "연락처를 입력해 주세요.")}</span>
               ) : null}
             </label>
-          </div>
-
-          <div className="form-grid two">
             <label className={`field-block${touched.requested_date && !form.requested_date.trim() ? " has-error" : ""}`}>
               <span>희망 날짜 <span className="required-mark">*</span></span>
               <input
@@ -908,33 +1266,37 @@ export function CustomerOrderPage() {
                 value={form.requested_date}
                 onChange={(event) => updateField("requested_date", event.target.value)}
                 onBlur={() => touchField("requested_date")}
-                min={getKoreaTodayDate()}
+                min={form.order_flow === "reservation" ? getKoreaTomorrowDate() : getKoreaTodayDate()}
                 aria-required="true"
               />
             </label>
-            <label className={`field-block${touched.requested_time_slot && !form.requested_time_slot.trim() ? " has-error" : ""}`}>
-              <span>희망 시간 <span className="required-mark">*</span></span>
-              <input
-                value={form.requested_time_slot}
-                onChange={(event) => updateField("requested_time_slot", event.target.value)}
-                onBlur={() => touchField("requested_time_slot")}
-                placeholder="예: 오후 3시 전후"
-                list="time-slot-suggestions"
-                aria-required="true"
-              />
-              <datalist id="time-slot-suggestions">
-                <option value="오전 10시 전후" />
-                <option value="오전 11시 전후" />
-                <option value="오후 12시 전후" />
-                <option value="오후 2시 전후" />
-                <option value="오후 3시 전후" />
-                <option value="오후 5시 전후" />
-                <option value="저녁 7시 전후" />
-              </datalist>
-              {fieldError("requested_time_slot", "희망 시간을 입력해 주세요.") ? (
-                <span className="field-error" role="alert">{fieldError("requested_time_slot", "희망 시간을 입력해 주세요.")}</span>
-              ) : null}
-            </label>
+          </div>
+
+          <div className={`field-block${touched.requested_time_slot && !form.requested_time_slot.trim() ? " has-error" : ""}`}>
+            <span>희망 시간 <span className="required-mark">*</span></span>
+            <div className="time-slot-grid" role="group" aria-label="희망 시간 선택">
+              {timeSlotOptions.map((slot) => (
+                <button
+                  key={slot.value}
+                  type="button"
+                  className={`time-slot-button${form.requested_time_slot === slot.value ? " active" : ""}`}
+                  onClick={() => updateField("requested_time_slot", slot.value)}
+                >
+                  {slot.label}
+                </button>
+              ))}
+            </div>
+            <input
+              value={form.requested_time_slot}
+              onChange={(event) => updateField("requested_time_slot", event.target.value)}
+              onBlur={() => touchField("requested_time_slot")}
+              placeholder="직접 입력: 예: 오후 3시 30분 전후"
+              aria-required="true"
+            />
+            <span className="field-hint">정확한 시간이 아니어도 괜찮습니다. 가능한 시간대를 선택해 주세요.</span>
+            {fieldError("requested_time_slot", "희망 시간을 입력해 주세요.") ? (
+              <span className="field-error" role="alert">{fieldError("requested_time_slot", "희망 시간을 입력해 주세요.")}</span>
+            ) : null}
           </div>
 
           {isDelivery ? (
@@ -953,7 +1315,7 @@ export function CustomerOrderPage() {
                     <span className="field-error" role="alert">{fieldError("receiver_name", "수령인명을 입력해 주세요.")}</span>
                   ) : null}
                 </label>
-                <label className={`field-block${touched.receiver_phone && !form.receiver_phone.trim() ? " has-error" : ""}`}>
+                <label className={`field-block${phoneFieldError("receiver_phone", "수령인 연락처를 입력해 주세요.") ? " has-error" : ""}`}>
                   <span>수령인 연락처 <span className="required-mark">*</span></span>
                   <input
                     value={form.receiver_phone}
@@ -963,8 +1325,8 @@ export function CustomerOrderPage() {
                     inputMode="tel"
                     autoComplete="tel"
                   />
-                  {fieldError("receiver_phone", "수령인 연락처를 입력해 주세요.") ? (
-                    <span className="field-error" role="alert">{fieldError("receiver_phone", "수령인 연락처를 입력해 주세요.")}</span>
+                  {phoneFieldError("receiver_phone", "수령인 연락처를 입력해 주세요.") ? (
+                    <span className="field-error" role="alert">{phoneFieldError("receiver_phone", "수령인 연락처를 입력해 주세요.")}</span>
                   ) : null}
                 </label>
               </div>
@@ -1019,16 +1381,6 @@ export function CustomerOrderPage() {
             />
           </label>
 
-          <label className="field-block">
-            <span>입금 예정자명</span>
-            <input
-              value={form.depositor_name}
-              onChange={(event) => updateField("depositor_name", event.target.value)}
-              placeholder="주문자명과 다를 경우 입력 (선택)"
-              autoComplete="name"
-            />
-            <span className="field-hint">입금자명이 주문자와 다를 때만 입력해 주세요.</span>
-          </label>
         </SectionCard>
       );
     }
@@ -1091,7 +1443,7 @@ export function CustomerOrderPage() {
         <div className="estimate-total-card">
             <span>예상 총액</span>
           <strong>{estimates.itemRange.max > 0 ? formatPriceRange(estimates.totalMin, estimates.totalMax) : "품목 확인 후 안내"}</strong>
-          <p>주문번호가 발급되면 주문 확인 화면에서 바로 진행 상태를 볼 수 있습니다.</p>
+          <p>중량대 기준 추정 금액입니다. 실제 중량 확인 후 최종 금액을 다시 안내합니다.</p>
         </div>
 
         {/* ✅ 개선: 제출 전 최종 알림 안내 */}
@@ -1103,6 +1455,9 @@ export function CustomerOrderPage() {
     );
   }
 
+  const nextButtonLabel =
+    currentStep === 0 && items.length > 0 ? "수령 방식 선택하기 →" : "다음";
+
   return (
     <form className="page-content order-simple-page order-conversion-page" onSubmit={handleSubmit} noValidate>
       <section className="page-hero compact">
@@ -1110,7 +1465,7 @@ export function CustomerOrderPage() {
           <p className="eyebrow-text">주문하기</p>
           <h1 className="page-title">시세에서 고르고, 주문번호까지 바로 확인하세요</h1>
           <p className="page-description">
-            어종, 손질, 받는 방법만 순서대로 고르면 예상 금액과 함께 주문서가 완성됩니다.
+            어종, 받는 방법, 손질만 순서대로 고르면 예상 금액과 함께 주문서가 완성됩니다.
           </p>
         </div>
         <div className="hero-pills">
@@ -1154,7 +1509,7 @@ export function CustomerOrderPage() {
         </div>
       ) : null}
 
-      <div className="order-sticky-cta" aria-live="polite">
+      <div className={`order-sticky-cta${highlightNextCta ? " pulse" : ""}`} aria-live="polite">
         <div className="order-sticky-copy">
           <span>
             {items.length}개 품목 · {orderSteps[currentStep].title}
@@ -1163,7 +1518,7 @@ export function CustomerOrderPage() {
             {estimates.itemRange.max > 0 ? formatPriceRange(estimates.totalMin, estimates.totalMax) : "예상 금액 대기"}
           </strong>
           <small className={currentStepError ? "text-error" : ""}>
-            {currentStepError || orderSteps[currentStep].description}
+            {currentStepError || (estimates.itemRange.max > 0 ? "중량대 기준 추정 · 실제 중량 확인 후 안내" : orderSteps[currentStep].description)}
           </small>
         </div>
         <div className="order-sticky-actions">
@@ -1174,7 +1529,7 @@ export function CustomerOrderPage() {
           ) : null}
           {currentStep < orderSteps.length - 1 ? (
             <button type="button" className="primary-button compact-button" onClick={handleNextStep}>
-              다음
+              {nextButtonLabel}
             </button>
           ) : (
             <button type="submit" className="primary-button compact-button" disabled={submitting}>

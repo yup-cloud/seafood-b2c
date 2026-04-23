@@ -25,6 +25,26 @@ interface ApiErrorEnvelope {
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
+export interface AdminOrderFilters {
+  search?: string;
+  order_status?: string;
+  pricing_status?: string;
+  payment_status?: string;
+  fulfillment_status?: string;
+  match_status?: string;
+  is_reservation?: string;
+}
+
+function buildQueryString(filters?: AdminOrderFilters): string {
+  if (!filters) return "";
+  const searchParams = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) searchParams.set(key, value);
+  });
+  const query = searchParams.toString();
+  return query ? `?${query}` : "";
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     headers: {
@@ -55,8 +75,8 @@ export const api = {
   getPublicOrder: (publicToken: string) => request<PublicOrderStatus>(`/public/orders/${publicToken}`),
   getPublicOrderByOrderNo: (orderNo: string) =>
     request<PublicOrderStatus>(`/public/orders/lookup/${encodeURIComponent(orderNo)}`),
-  getAdminOrders: (search?: string) =>
-    request<AdminOrdersResponse>(`/admin/orders${search ? `?search=${encodeURIComponent(search)}` : ""}`),
+  getAdminOrders: (filters?: AdminOrderFilters) =>
+    request<AdminOrdersResponse>(`/admin/orders${buildQueryString(filters)}`),
   getAdminPriceBoard: (date?: string) =>
     request<{ date: string | null; boards: Array<{ id: string; board_date: string; status: string }>; items: PriceBoardResponse["items"] }>(
       `/admin/price-board${date ? `?date=${encodeURIComponent(date)}` : ""}`

@@ -52,6 +52,24 @@ function parseNumberInput(value: string): string {
   return value.replace(/[^\d]/g, "");
 }
 
+function parseAmount(value: string | null | undefined): number {
+  if (!value) return 0;
+  const normalized = String(value).replace(/[^\d.-]/g, "");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function calculateItemSubtotal(order: AdminOrderDetail): string {
+  const subtotal = order.items.reduce((sum, item) => {
+    const estimatedTotal = parseAmount(item.estimated_total);
+    if (estimatedTotal > 0) return sum + estimatedTotal;
+    const unitPrice = parseAmount(item.unit_price);
+    const quantity = parseAmount(item.quantity);
+    return sum + unitPrice * quantity;
+  }, 0);
+  return subtotal > 0 ? String(Math.round(subtotal)) : "";
+}
+
 export function AdminOrderPage() {
   const { orderId = "" } = useParams();
   const [order, setOrder] = useState<AdminOrderDetail>(demoAdminOrderDetail);
@@ -123,8 +141,9 @@ export function AdminOrderPage() {
   function hydrateOrder(nextOrder: AdminOrderDetail, nextMode: "live" | "demo") {
     setOrder(nextOrder);
     setMode(nextMode);
+    const estimatedItemSubtotal = calculateItemSubtotal(nextOrder);
     setQuoteForm({
-      itemSubtotal: nextOrder.quote?.item_subtotal ?? "",
+      itemSubtotal: nextOrder.quote?.item_subtotal ?? estimatedItemSubtotal,
       processingFeeTotal: nextOrder.quote?.processing_fee_total ?? "",
       deliveryFeeTotal: nextOrder.quote?.delivery_fee_total ?? "",
       discountTotal: nextOrder.quote?.discount_total ?? "0",
@@ -436,6 +455,7 @@ export function AdminOrderPage() {
                     placeholder="0"
                     aria-label="원물금액 입력"
                   />
+                  <span className="field-hint">주문서의 단가와 예상 금액을 기준으로 기본값을 채웁니다. 실제 중량 확인 후 수정할 수 있습니다.</span>
                 </label>
                 <label className="field-block">
                   <span>손질비</span>

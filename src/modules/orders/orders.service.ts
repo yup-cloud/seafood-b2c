@@ -99,6 +99,24 @@ function requiredString(value: unknown, fieldName: string, message: string): str
   return parsed;
 }
 
+function isValidPhoneNumber(value: string): boolean {
+  const digits = value.replace(/\D/g, "");
+  if (digits.startsWith("010")) {
+    return digits.length === 11;
+  }
+  return digits.length >= 10 && digits.length <= 11;
+}
+
+function requiredPhone(value: unknown, fieldName: string, message: string): string {
+  const parsed = requiredString(value, fieldName, message);
+  if (!isValidPhoneNumber(parsed)) {
+    throw validationError("연락처 형식이 올바르지 않습니다.", {
+      [fieldName]: "연락처를 정확히 입력해주세요. 010 휴대폰은 11자리여야 합니다."
+    });
+  }
+  return parsed;
+}
+
 function optionalNumber(value: unknown, fieldName: string): number | undefined {
   if (value === undefined) {
     return undefined;
@@ -271,6 +289,12 @@ function normalizeCreateOrderPayload(payload: unknown): CreateOrderPayload {
     });
   }
 
+  if (receiverPhone && !isValidPhoneNumber(receiverPhone)) {
+    throw validationError("수령인 연락처 형식이 올바르지 않습니다.", {
+      receiver_phone: "수령인 연락처를 정확히 입력해주세요. 010 휴대폰은 11자리여야 합니다."
+    });
+  }
+
   if (fulfillmentType === "parcel" && (!postalCode || !addressLine1)) {
     throw validationError("택배 수령지 정보가 필요합니다.", {
       postal_code: postalCode ? "" : "우편번호를 입력해주세요.",
@@ -280,7 +304,7 @@ function normalizeCreateOrderPayload(payload: unknown): CreateOrderPayload {
 
   return {
     customerName: requiredString(data.customer_name, "customer_name", "주문자명을 입력해주세요."),
-    customerPhone: requiredString(data.customer_phone, "customer_phone", "주문자 연락처를 입력해주세요."),
+    customerPhone: requiredPhone(data.customer_phone, "customer_phone", "주문자 연락처를 입력해주세요."),
     depositorName: asNullableString(data.depositor_name) ?? null,
     purchaseUnit,
     requestedDate: optionalDate(data.requested_date, "requested_date") ?? null,
