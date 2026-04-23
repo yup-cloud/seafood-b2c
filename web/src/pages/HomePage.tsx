@@ -17,14 +17,28 @@ function splitProcessingRule(rule: string) {
   };
 }
 
+function resolveBoardDateLabel(boardDate: string): string {
+  const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" });
+  const today = formatter.format(new Date());
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = formatter.format(yesterdayDate);
+
+  if (boardDate === today) return "오늘";
+  if (boardDate === yesterday) return "어제";
+  return formatDate(boardDate);
+}
+
 export function HomePage() {
   const [store, setStore] = useState<StoreInfo>(demoStore);
   const [board, setBoard] = useState<PriceBoardResponse>(demoPriceBoard);
+  const [initialLoading, setInitialLoading] = useState(true);
   const cutoffWindows = board.order_guide.cutoff_windows ?? [
     { fulfillment_type: "pickup", label: "매장 픽업", cutoff_note: board.order_guide.pickup_note },
     { fulfillment_type: "quick", label: "퀵 수령", cutoff_note: board.order_guide.quick_note },
     { fulfillment_type: "parcel", label: "택배 수령", cutoff_note: board.order_guide.parcel_note }
   ];
+  const boardDateLabel = resolveBoardDateLabel(board.board_date);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,6 +59,10 @@ export function HomePage() {
         }
         setStore(demoStore);
         setBoard(demoPriceBoard);
+      } finally {
+        if (!cancelled) {
+          setInitialLoading(false);
+        }
       }
     }
 
@@ -96,10 +114,14 @@ export function HomePage() {
         <div className="hero-card-side">
           <div className="hero-store-card">
             <strong>{store.name}</strong>
-            <p>{store.address.line1}</p>
-            <p>{store.business_hours_note}</p>
+            {store.address.line1 ? <p>{store.address.line1}</p> : null}
+            {store.business_hours_note ? <p>{store.business_hours_note}</p> : null}
             <div className="hero-store-meta">
-              <span>{store.phones[0]}</span>
+              {store.phones[0] ? (
+                <a href={`tel:${store.phones[0]}`} className="phone-link">
+                  {store.phones[0]}
+                </a>
+              ) : null}
               <span>픽업 · 퀵 · 택배 가능</span>
             </div>
           </div>
@@ -108,7 +130,7 @@ export function HomePage() {
 
       <SectionCard
         title="오늘 주문 안내"
-        subtitle={`${formatDate(board.board_date)} 기준 주문 가능한 품목과 수령 안내입니다.`}
+        subtitle={`${boardDateLabel} 기준 주문 가능한 품목과 수령 안내입니다.`}
       >
         <div className="cutoff-grid">
           {cutoffWindows.map((cutoff) => (
@@ -137,7 +159,13 @@ export function HomePage() {
           action={<Link to="/customer/order" className="text-link">주문서 바로가기</Link>}
         >
           <div className="stack-list">
-            {board.items.length ? (
+            {initialLoading ? (
+              <>
+                <div className="skeleton" style={{ height: "68px", borderRadius: "20px" }} />
+                <div className="skeleton" style={{ height: "68px", borderRadius: "20px" }} />
+                <div className="skeleton" style={{ height: "68px", borderRadius: "20px" }} />
+              </>
+            ) : board.items.length ? (
               board.items.map((item) => (
                 <div key={item.id ?? item.item_name} className="list-row">
                   <div>
@@ -145,6 +173,9 @@ export function HomePage() {
                     <p>
                       {item.origin_label ?? "원산지 미지정"} · {item.size_band ?? "규격 미지정"}
                     </p>
+                    {item.reservable_flag && item.sale_status === "reserved_only" && item.reservation_cutoff_note ? (
+                      <small className="reservation-hint">예약 안내: {item.reservation_cutoff_note}</small>
+                    ) : null}
                   </div>
                   <div className="row-end">
                     <strong>
