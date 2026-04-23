@@ -79,6 +79,36 @@ export function formatItemNote(value: string | null | undefined): string {
   return cleaned || original;
 }
 
+export function formatProcessingRuleSummary(value: string): string {
+  const cutTypeLabels: Record<string, string> = {
+    raw: "원물 그대로",
+    whole: "원물 그대로",
+    round: "원물 그대로",
+    fillet: "포 뜨기",
+    sashimi: "회 작업",
+    masukawa: "마스까와",
+    sekkoshi: "세꼬시",
+    steak: "토막 손질"
+  };
+
+  let formatted = value
+    .replace(/\b(raw|whole|round|fillet|sashimi|masukawa|sekkoshi|steak)\b/g, (match) => cutTypeLabels[match] ?? match)
+    .replace(/^공통\s+/, "")
+    .replace(/개별문의/g, "개별 문의")
+    .replace(/(\d+(?:\.\d+)?)원/g, (_, rawAmount: string) => {
+      const amount = Number(rawAmount);
+      return Number.isFinite(amount) ? `${amount.toLocaleString("ko-KR")}원` : `${rawAmount}원`;
+    })
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  if (!formatted.includes(":")) {
+    formatted = formatted.replace(/\s+(kg당|마리당|개당)\s+/, ": $1 ");
+  }
+
+  return formatted;
+}
+
 export function formatStatusLabel(value: string): string {
   const labels: Record<string, string> = {
     available: "주문 가능",

@@ -469,7 +469,7 @@ export async function getOrderFormOptions() {
     processing_fee_rules: rules,
     store_id: store.id,
     warnings: [
-      "일반택배는 회보다 오로시/필렛 수령을 권장합니다.",
+      "일반택배는 회보다 오로시/포 뜨기 수령을 권장합니다.",
       "반절 주문은 매칭 완료 후 최종 금액이 확정될 수 있습니다."
     ]
   };

@@ -4,8 +4,18 @@ import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { demoPriceBoard, demoStore } from "../data/demo";
 import { api } from "../lib/api";
-import { formatCurrency, formatDate, formatItemName } from "../lib/format";
+import { formatCurrency, formatDate, formatItemName, formatProcessingRuleSummary } from "../lib/format";
 import { PriceBoardResponse, StoreInfo } from "../types";
+
+function splitProcessingRule(rule: string) {
+  const formatted = formatProcessingRuleSummary(rule);
+  const [label, ...detailParts] = formatted.split(":");
+
+  return {
+    label: label.trim(),
+    detail: detailParts.join(":").trim() || "주문 내용 확인 후 안내"
+  };
+}
 
 export function HomePage() {
   const [store, setStore] = useState<StoreInfo>(demoStore);
@@ -198,14 +208,17 @@ export function HomePage() {
           title="손질 비용 안내"
           subtitle="원물 가격 외에 추가되는 손질비 기준입니다. 주문 전 참고해 주세요."
         >
-          <div className="stack-list">
-            {board.order_guide.processing_rules_summary.map((rule) => (
-              <div key={rule} className="list-row">
-                <div>
-                  <strong>{rule}</strong>
+          <div className="processing-fee-grid">
+            {board.order_guide.processing_rules_summary.map((rule) => {
+              const formattedRule = splitProcessingRule(rule);
+
+              return (
+                <div key={rule} className="processing-fee-chip">
+                  <strong>{formattedRule.label}</strong>
+                  <span>{formattedRule.detail}</span>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </SectionCard>
       )}

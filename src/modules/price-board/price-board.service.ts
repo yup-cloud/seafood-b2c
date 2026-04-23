@@ -1,6 +1,6 @@
 import { saleStatuses } from "../../domain/reference-data";
 import { notFoundError, validationError } from "../../lib/errors";
-import { listProcessingRules } from "../processing-rules/processing-rules.repository";
+import { listProcessingRules, type ProcessingRuleRecord } from "../processing-rules/processing-rules.repository";
 import { getDefaultStore } from "../stores/stores.service";
 import {
   createPriceBoardItem,
@@ -77,11 +77,43 @@ const fallbackPriceBoardItems = [
 ];
 
 const fallbackProcessingRulesSummary = [
-  "오로시(필렛) kg당 2,000원",
+  "포 뜨기 kg당 2,000원",
   "회 작업 kg당 4,000원",
   "껍질 작업 kg당 5,000원",
-  "진공포장은 필렛 기준 가능 여부 확인"
+  "진공포장은 포 뜨기 기준 가능 여부 확인"
 ];
+
+const processingCutTypeLabels: Record<string, string> = {
+  raw: "원물 그대로",
+  whole: "원물 그대로",
+  round: "원물 그대로",
+  fillet: "포 뜨기",
+  sashimi: "회 작업",
+  masukawa: "마스까와",
+  sekkoshi: "세꼬시",
+  steak: "토막 손질"
+};
+
+function formatFeeAmount(value: string | null) {
+  if (!value) {
+    return "개별 문의";
+  }
+
+  const amount = Number(value);
+  if (Number.isFinite(amount)) {
+    return `${amount.toLocaleString("ko-KR")}원`;
+  }
+
+  return `${value}원`;
+}
+
+function formatProcessingRuleSummary(rule: ProcessingRuleRecord) {
+  const speciesLabel = rule.species_name === "공통" ? "" : `${rule.species_name} `;
+  const cutTypeLabel = processingCutTypeLabels[rule.cut_type] ?? rule.cut_type;
+  const feeLabel = rule.fee_amount ? `${rule.fee_mode} ${formatFeeAmount(rule.fee_amount)}` : "개별 문의";
+
+  return `${speciesLabel}${cutTypeLabel}: ${feeLabel}`.trim();
+}
 
 function asString(value: unknown): string | undefined {
   if (typeof value !== "string") {
@@ -158,10 +190,7 @@ export async function getTodayPriceBoard(date?: string) {
   const rules = await listProcessingRules(store.id);
   const processingRulesSummary = rules
     .filter((rule) => rule.is_active)
-    .map((rule) => {
-      const fee = rule.fee_amount ? ` ${rule.fee_amount}원` : "";
-      return `${rule.species_name} ${rule.cut_type} ${rule.fee_mode}${fee}`.trim();
-    });
+    .map(formatProcessingRuleSummary);
 
   return {
     board_date: batch?.board_date ?? targetDate,
@@ -169,7 +198,7 @@ export async function getTodayPriceBoard(date?: string) {
     order_guide: {
       pickup_note: "방문 예정 시간만 남겨주시면 포장비 없이 순서에 맞춰 준비해드려요.",
       quick_note: "당일 드실 분은 퀵이 가장 안정적이고, 최소 2~3시간 전 주문이 좋아요.",
-      parcel_note: "당일택배는 오전 9시 30분 전 문자 주문, 일반택배는 필렛·오로시 위주로 권장해요.",
+      parcel_note: "당일택배는 오전 9시 30분 전 문자 주문, 일반택배는 포 뜨기·오로시 위주로 권장합니다.",
       processing_rules_summary: processingRulesSummary.length
         ? processingRulesSummary
         : fallbackProcessingRulesSummary,
@@ -187,7 +216,7 @@ export async function getTodayPriceBoard(date?: string) {
         {
           fulfillment_type: "parcel",
           label: "택배 수령",
-          cutoff_note: "당일택배는 오전 9시 30분 전 주문 권장, 일반택배는 필렛·오로시 위주로 안내해드려요."
+          cutoff_note: "당일택배는 오전 9시 30분 전 주문 권장, 일반택배는 포 뜨기·오로시 위주로 안내합니다."
         }
       ],
       expected_price_note:

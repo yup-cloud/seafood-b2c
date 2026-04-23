@@ -5,7 +5,15 @@ import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { demoAdminOrders, demoFulfillments, demoPaymentReview, demoPriceBoard, demoStore } from "../data/demo";
 import { api } from "../lib/api";
-import { formatCurrency, formatDate, formatItemName, formatItemNote, formatSourceModeLabel, formatStatusLabel } from "../lib/format";
+import {
+  formatCurrency,
+  formatDate,
+  formatItemName,
+  formatItemNote,
+  formatProcessingRuleSummary,
+  formatSourceModeLabel,
+  formatStatusLabel
+} from "../lib/format";
 import {
   AdminOrdersResponse,
   FulfillmentQueueItem,
@@ -578,8 +586,8 @@ export function AdminDashboardPage() {
         <div className="import-preview-grid">
           {(parsedPreview?.items ?? board.items).map((item, index) => (
             <article key={`${item.item_name}-${item.size_band ?? "na"}-${index}`} className="import-preview-item editable">
-              <div className="summary-bar">
-                <strong>품목 {index + 1}</strong>
+              <div className="preview-row-index">
+                <strong>{index + 1}</strong>
                 <button
                   type="button"
                   className="text-link danger"
@@ -589,7 +597,7 @@ export function AdminDashboardPage() {
                   삭제
                 </button>
               </div>
-              <label className="field-block compact">
+              <label className="field-block compact preview-name-field">
                 <span>품목명</span>
                 <input
                   value={formatItemName(item.item_name)}
@@ -598,72 +606,59 @@ export function AdminDashboardPage() {
                   }
                 />
               </label>
-              <div className="inline-fields">
-                <label className="field-block compact">
-                  <span>원산지</span>
-                  <input
-                    value={item.origin_label ?? ""}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                      handlePreviewItemChange(index, "origin_label", event.target.value)
-                    }
-                  />
-                </label>
-                <label className="field-block compact">
-                  <span>중량대</span>
-                  <input
-                    value={item.size_band ?? ""}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                      handlePreviewItemChange(index, "size_band", event.target.value)
-                    }
-                  />
-                </label>
-              </div>
-              <div className="inline-fields">
-                <label className="field-block compact">
-                  <span>kg당 가격</span>
-                  <input
-                    inputMode="numeric"
-                    value={item.unit_price ?? ""}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                      handlePreviewItemChange(index, "unit_price", event.target.value.replace(/[^\d]/g, ""))
-                    }
-                  />
-                </label>
-                <label className="field-block compact">
-                  <span>상태</span>
-                  <select
-                    value={item.sale_status}
-                    onChange={(event) => handlePreviewItemChange(index, "sale_status", event.target.value)}
-                  >
-                    <option value="available">판매중</option>
-                    <option value="reserved_only">예약문의</option>
-                    <option value="sold_out">품절</option>
-                  </select>
-                </label>
-              </div>
-              {/* ✅ 개선: 상태 버튼 – 시각적으로 현재 상태 강조 */}
-              <div className="status-button-row">
-                {priceItemStatuses.map((status) => (
-                  <button
-                    key={status.value}
-                    type="button"
-                    className={`status-mini-button${item.sale_status === status.value ? " active" : ""}`}
-                    onClick={() => handlePreviewItemChange(index, "sale_status", status.value)}
-                  >
-                    {status.label}
-                  </button>
-                ))}
-              </div>
               <label className="field-block compact">
+                <span>원산지</span>
+                <input
+                  value={item.origin_label ?? ""}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    handlePreviewItemChange(index, "origin_label", event.target.value)
+                  }
+                />
+              </label>
+              <label className="field-block compact">
+                <span>중량대</span>
+                <input
+                  value={item.size_band ?? ""}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    handlePreviewItemChange(index, "size_band", event.target.value)
+                  }
+                />
+              </label>
+              <label className="field-block compact">
+                <span>kg당 가격</span>
+                <input
+                  inputMode="numeric"
+                  value={item.unit_price ?? ""}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    handlePreviewItemChange(index, "unit_price", event.target.value.replace(/[^\d]/g, ""))
+                  }
+                />
+              </label>
+              <div className="preview-status-cell">
+                <span>상태</span>
+                <div className="status-button-row">
+                  {priceItemStatuses.map((status) => (
+                    <button
+                      key={status.value}
+                      type="button"
+                      className={`status-mini-button${item.sale_status === status.value ? " active" : ""}`}
+                      onClick={() => handlePreviewItemChange(index, "sale_status", status.value)}
+                    >
+                      {status.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <label className="field-block compact preview-note-field">
                 <span>메모</span>
                 <input
-                    value={formatItemNote(item.note)}
+                  value={formatItemNote(item.note)}
                   onChange={(event: ChangeEvent<HTMLInputElement>) =>
                     handlePreviewItemChange(index, "note", event.target.value)
                   }
                 />
               </label>
-              <label className="check-row">
+              <label className="check-row preview-check-field">
                 <input
                   type="checkbox"
                   checked={item.reservable_flag}
@@ -1114,7 +1109,7 @@ function buildKakaoNotice(params: {
     `- 택배: ${board.order_guide.parcel_note}`,
     "",
     "손질 / 포장 안내",
-    ...board.order_guide.processing_rules_summary.map((rule) => `- ${rule}`),
+    ...board.order_guide.processing_rules_summary.map((rule) => `- ${formatProcessingRuleSummary(rule)}`),
     "",
     board.order_guide.expected_price_note ?? "당일 시세와 손질비, 운임비를 반영해 최종 금액을 다시 안내드립니다.",
     "",

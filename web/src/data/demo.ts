@@ -21,7 +21,7 @@ export const demoStore: StoreInfo = {
   },
   address: {
     line1: "수산시장 데모동 00호",
-    line2: "방문 포장비 없음 · 필렛 진공포장 가능"
+    line2: "방문 포장비 없음 · 포 뜨기 진공포장 가능"
   },
   business_hours_note: "월~금 05:00~18:00 / 토 05:00~19:00 / 일 07:00~17:00"
 };
@@ -217,7 +217,7 @@ export const demoPriceBoard: PriceBoardResponse = {
     quick_note: "매장 기준 가까운 지역은 퀵이 당일택배와 금액 차이가 크지 않을 수 있어요.",
     parcel_note: "당일택배는 오전 9시 30분 전 문자 주문이 필요하고, 원물은 진공포장이 불가해요.",
     processing_rules_summary: [
-      "오로시(필렛) kg당 2,000원",
+      "포 뜨기 kg당 2,000원",
       "회 작업 kg당 4,000원",
       "도미 등 껍질 작업 kg당 5,000원",
       "진공포장은 무료이며 원물은 진공 불가"
@@ -236,7 +236,7 @@ export const demoPriceBoard: PriceBoardResponse = {
       {
         fulfillment_type: "parcel",
         label: "택배 수령",
-        cutoff_note: "당일택배는 오전 9시 30분 전 문자 주문, 일반택배는 필렛·오로시 위주로 권장해요."
+      cutoff_note: "당일택배는 오전 9시 30분 전 문자 주문, 일반택배는 포 뜨기·오로시 위주로 권장합니다."
       }
     ],
     expected_price_note:
@@ -273,7 +273,7 @@ export const demoOrderOptions: OrderFormOptions = {
   ],
   store_id: "store_demo",
   warnings: [
-    "일반택배는 회보다 오로시/필렛 수령을 권장합니다.",
+    "일반택배는 회보다 오로시/포 뜨기 수령을 권장합니다.",
     "반절 주문은 매칭 완료 후 최종 금액이 확정될 수 있습니다."
   ]
 };
