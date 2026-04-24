@@ -205,6 +205,33 @@ function serializeReservationItemName(itemName: string, size: string, date: stri
     .join(" / ");
 }
 
+function getSpeciesLabel(itemName: string | null | undefined) {
+  const cleanedName = formatItemName(itemName)
+    .replace(/\s*\([^)]*\)\s*/g, " ")
+    .replace(/^(?:자연산|양식|활|선어|냉장|생물)\s+/u, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return cleanedName || formatItemName(itemName);
+}
+
+function compareBoardItemVariants(left: PriceBoardItem, right: PriceBoardItem) {
+  const leftSoldOut = left.sale_status === "sold_out" ? 1 : 0;
+  const rightSoldOut = right.sale_status === "sold_out" ? 1 : 0;
+  if (leftSoldOut !== rightSoldOut) return leftSoldOut - rightSoldOut;
+
+  const leftWeight = parseWeightRangeInKg(left.size_band)?.min ?? Number.MAX_SAFE_INTEGER;
+  const rightWeight = parseWeightRangeInKg(right.size_band)?.min ?? Number.MAX_SAFE_INTEGER;
+  if (leftWeight !== rightWeight) return leftWeight - rightWeight;
+
+  return parseUnitPrice(left.unit_price) - parseUnitPrice(right.unit_price);
+}
+
+function getFishingStyleLabel(itemName: string) {
+  if (itemName.includes("자연산")) return "자연산";
+  if (itemName.includes("양식")) return "양식";
+  return "";
+}
+
 function buildSelectedItem(boardItem: PriceBoardItem, quantity: number, cutType = "fillet"): SelectedOrderItem {
   return {
     id: makeItemId(),
@@ -269,6 +296,7 @@ export function CustomerOrderPage() {
   const [reservationItemName, setReservationItemName] = useState("");
   const [reservationItemSize, setReservationItemSize] = useState("");
   const [reservationItemDate, setReservationItemDate] = useState("");
+  const [selectedSpecies, setSelectedSpecies] = useState("");
   const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
@@ -285,10 +313,47 @@ export function CustomerOrderPage() {
   const isDelivery = form.fulfillment_type === "quick" || form.fulfillment_type === "parcel";
   const hasParcelSashimi = form.fulfillment_type === "parcel" && items.some((item) => item.requested_cut_type === "sashimi");
   const currentStepError = getStepError(currentStep);
+  const speciesGroups = useMemo(() => {
+    const groupMap = new Map<string, PriceBoardItem[]>();
+    for (const item of board.items) {
+      const key = getSpeciesLabel(item.item_name);
+      const current = groupMap.get(key) ?? [];
+      current.push(item);
+      groupMap.set(key, current);
+    }
+
+    return Array.from(groupMap.entries()).map(([label, variants]) => ({
+      label,
+      variants: [...variants].sort(compareBoardItemVariants),
+      inCartCount: variants.filter((variant) =>
+        items.some((selectedItem) => selectedItem.item_name === formatItemName(variant.item_name))
+      ).length
+    }));
+  }, [board.items, items]);
+  const activeSpeciesGroup =
+    speciesGroups.find((group) => group.label === selectedSpecies) ??
+    speciesGroups[0] ??
+    null;
+  const selectedItemSummary = useMemo(() => {
+    if (!items.length) return "원하는 품목을 고르면 여기서 바로 확인됩니다.";
+    const labels = items.slice(0, 2).map((item) => formatItemName(item.item_name)).join(", ");
+    return items.length > 2 ? `${labels} 외 ${items.length - 2}개` : labels;
+  }, [items]);
 
   useEffect(() => {
     selectedItemsRef.current = items;
   }, [items]);
+
+  useEffect(() => {
+    if (!speciesGroups.length) {
+      setSelectedSpecies("");
+      return;
+    }
+
+    if (!selectedSpecies || !speciesGroups.some((group) => group.label === selectedSpecies)) {
+      setSelectedSpecies(speciesGroups[0].label);
+    }
+  }, [selectedSpecies, speciesGroups]);
 
   const estimates = useMemo(() => {
     const itemRange = items.reduce(
@@ -414,10 +479,15 @@ export function CustomerOrderPage() {
     setForm((current) => ({
       ...current,
       order_flow: presetFlow === "reservation" ? "reservation" : current.order_flow,
-      purchase_unit: halfRequested ? "half_request" : current.purchase_unit
+      purchase_unit: halfRequested ? "half_request" : current.purchase_unit,
+      requested_date:
+        presetFlow === "reservation"
+          ? getKoreaTomorrowDate()
+          : current.requested_date
     }));
 
     if (presetItem) {
+      setSelectedSpecies(getSpeciesLabel(presetItem));
       const boardItem = board.items.find(
         (item) => item.item_name === presetItem || formatItemName(item.item_name) === formatItemName(presetItem)
       );
@@ -434,7 +504,16 @@ export function CustomerOrderPage() {
   }, [board.items, searchParams, setSearchParams]);
 
   useEffect(() => {
-    stepBodyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const frameId = window.requestAnimationFrame(() => {
+      const node = stepBodyRef.current;
+      if (!node) return;
+
+      const stickyOffset = window.innerWidth <= 640 ? 152 : 108;
+      const nextTop = node.getBoundingClientRect().top + window.scrollY - stickyOffset;
+      window.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, [currentStep]);
 
   function updateField<K extends keyof OrderFormState>(key: K, value: OrderFormState[K]) {
@@ -527,22 +606,23 @@ export function CustomerOrderPage() {
     setSubmitMessage("");
   }
 
-  function addBoardItem(boardItem: PriceBoardItem) {
+  function toggleBoardItem(boardItem: PriceBoardItem) {
+    const displayName = formatItemName(boardItem.item_name);
+
     if (boardItem.sale_status === "sold_out") {
       setSubmitMessage("품절 품목은 바로 주문할 수 없습니다. 예약 주문으로 문의해 주세요.");
       return;
     }
+
+    const existing = items.find((item) => item.item_name === displayName);
+    if (existing) {
+      setItems((current) => current.filter((item) => item.id !== existing.id));
+      setSubmitMessage(`${displayName} 품목을 담은 목록에서 뺐습니다.`);
+      return;
+    }
+
     const firstItem = items.length === 0;
-    setItems((current) => {
-      const displayName = formatItemName(boardItem.item_name);
-      const existing = current.find((item) => item.item_name === displayName);
-      if (!existing) return [...current, buildSelectedItem(boardItem, unitQuantity)];
-      return current.map((item) =>
-        item.id === existing.id
-          ? { ...item, quantity: Number((item.quantity + unitQuantity).toFixed(1)) }
-          : item
-      );
-    });
+    setItems((current) => [...current, buildSelectedItem(boardItem, unitQuantity)]);
     if (firstItem) {
       setHighlightNextCta(true);
       window.setTimeout(() => setHighlightNextCta(false), 1200);
@@ -893,71 +973,102 @@ export function CustomerOrderPage() {
             <div className="order-stage-block">
               <div className="order-stage-note">
                 <strong>
-                  오늘 준비 가능한 품목
+                  어종을 먼저 고른 뒤 규격을 선택해 주세요
                   {items.length > 0 && (
                     <span className="item-count-badge">{items.length}개 담김</span>
                   )}
                 </strong>
                 <span>
-                  누르면 바로 주문서에 담깁니다.
-                  {form.purchase_unit === "half_request"
-                    ? " 반마리 단위로 담습니다."
-                    : " 이미 담긴 품목은 한 번 더 누르면 수량이 늘어납니다."}
+                  원하는 어종을 고르면 아래에 원산지와 크기별 규격이 정리됩니다. 다시 누르면 담은 목록에서 빠집니다.
                 </span>
               </div>
-              {renderSelectedCartPanel()}
-              <div className="market-item-grid">
-                {board.items.length ? (
-                  board.items.map((item) => {
-                    const displayName = formatItemName(item.item_name);
-                    const displayNote = formatItemNote(item.note);
-                    const inCart = items.find((i) => i.item_name === displayName);
-                    return (
-                      <button
-                        key={item.id ?? item.item_name}
-                        type="button"
-                        className={`market-item-card${item.sale_status === "sold_out" ? " disabled" : ""}${inCart ? " in-cart" : ""}`}
-                        onClick={() => addBoardItem(item)}
-                        disabled={item.sale_status === "sold_out"}
-                        aria-pressed={Boolean(inCart)}
-                      >
-                        <span className="market-item-top">
-                          <strong>{displayName}</strong>
-                          <StatusBadge value={item.sale_status} />
-                        </span>
-                        <span>
-                          {item.origin_label ?? "원산지 확인"} · {item.size_band ?? "크기 확인"}
-                        </span>
-                        <b>
-                          {formatUnitPriceLabel(item.unit_price, item.unit_label)}
-                        </b>
-                        {item.reservable_flag && item.sale_status === "reserved_only" && item.reservation_cutoff_note ? (
-                          <small className="reservation-hint">📋 {item.reservation_cutoff_note}</small>
-                        ) : item.sale_status === "sold_out" ? (
-                          <small className="sold-out-hint">품절 · 예약 주문으로 문의해 주세요</small>
-                        ) : displayNote ? (
-                          <small>{displayNote}</small>
-                        ) : null}
-                        {inCart ? (
-                          <span className="in-cart-indicator">{formatQuantityLabel(inCart.quantity)} 담김 · 누르면 추가</span>
-                        ) : null}
-                      </button>
-                    );
-                  })
-                ) : (
-                  <div className="empty-board-state">
-                    <p>오늘 시세를 준비 중입니다.</p>
-                    <p>예약 주문으로 문의하거나 잠시 후 다시 확인해 주세요.</p>
-                    <button
-                      type="button"
-                      className="secondary-button compact-button"
-                      onClick={() => updateField("order_flow", "reservation")}
-                    >
-                      예약 주문으로 전환
-                    </button>
+              {speciesGroups.length ? (
+                <>
+                  <div className="species-selector">
+                    <strong className="species-selector-title">어종 선택</strong>
+                    <div className="species-chip-grid">
+                      {speciesGroups.map((group) => (
+                        <button
+                          key={group.label}
+                          type="button"
+                          className={`species-chip${activeSpeciesGroup?.label === group.label ? " active" : ""}`}
+                          onClick={() => setSelectedSpecies(group.label)}
+                        >
+                          <strong>{group.label}</strong>
+                          <span>
+                            {group.variants.length}개 규격
+                            {group.inCartCount > 0 ? ` · ${group.inCartCount}개 담김` : ""}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                )}
-              </div>
+
+                  {activeSpeciesGroup ? (
+                    <>
+                      <div className="order-stage-note compact">
+                        <strong>{activeSpeciesGroup.label} 규격 선택</strong>
+                        <span>
+                          원산지와 크기별로 원하는 규격을 고르면 됩니다.
+                          {form.purchase_unit === "half_request" ? " 반마리 기준으로 담깁니다." : " 담은 뒤에는 수량 단계에서 조절할 수 있습니다."}
+                        </span>
+                      </div>
+                      <div className="market-item-grid">
+                        {activeSpeciesGroup.variants.map((item) => {
+                          const displayName = formatItemName(item.item_name);
+                          const displayNote = formatItemNote(item.note);
+                          const inCart = items.find((selectedItem) => selectedItem.item_name === displayName);
+                          const fishingStyle = getFishingStyleLabel(item.item_name);
+                          return (
+                            <button
+                              key={item.id ?? item.item_name}
+                              type="button"
+                              className={`market-item-card market-item-card.variant${item.sale_status === "sold_out" ? " disabled" : ""}${inCart ? " in-cart" : ""}`}
+                              onClick={() => toggleBoardItem(item)}
+                              aria-pressed={Boolean(inCart)}
+                              aria-disabled={item.sale_status === "sold_out"}
+                            >
+                              <span className="market-item-top">
+                                <strong>{item.size_band ?? displayName}</strong>
+                                <StatusBadge value={item.sale_status} />
+                              </span>
+                              <span>
+                                {[fishingStyle, item.origin_label, displayName !== activeSpeciesGroup.label ? displayName : ""]
+                                  .filter(Boolean)
+                                  .join(" · ") || "원산지와 규격 확인"}
+                              </span>
+                              <b>{formatUnitPriceLabel(item.unit_price, item.unit_label)}</b>
+                              {item.reservable_flag && item.sale_status === "reserved_only" && item.reservation_cutoff_note ? (
+                                <small className="reservation-hint">📋 {item.reservation_cutoff_note}</small>
+                              ) : item.sale_status === "sold_out" ? (
+                                <small className="sold-out-hint">품절 · 예약 주문으로 문의해 주세요</small>
+                              ) : displayNote ? (
+                                <small>{displayNote}</small>
+                              ) : null}
+                              {inCart ? (
+                                <span className="in-cart-indicator">{formatQuantityLabel(inCart.quantity)} 담김 · 다시 누르면 해제</span>
+                              ) : null}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : null}
+                  {renderSelectedCartPanel()}
+                </>
+              ) : (
+                <div className="empty-board-state">
+                  <p>오늘 시세를 준비 중입니다.</p>
+                  <p>예약 주문으로 문의하거나 잠시 후 다시 확인해 주세요.</p>
+                  <button
+                    type="button"
+                    className="secondary-button compact-button"
+                    onClick={() => updateField("order_flow", "reservation")}
+                  >
+                    예약 주문으로 전환
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="order-stage-block">
@@ -1514,6 +1625,7 @@ export function CustomerOrderPage() {
           <span>
             {items.length}개 품목 · {orderSteps[currentStep].title}
           </span>
+          {items.length ? <p className="order-sticky-items">{selectedItemSummary}</p> : null}
           <strong>
             {estimates.itemRange.max > 0 ? formatPriceRange(estimates.totalMin, estimates.totalMax) : "예상 금액 대기"}
           </strong>

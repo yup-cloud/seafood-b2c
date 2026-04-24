@@ -2794,6 +2794,10 @@ textarea:disabled {
   gap: 4px;
 }
 
+.order-stage-note.compact {
+  padding: 13px 15px;
+}
+
 .order-stage-note strong,
 .order-warning-panel strong,
 .order-review-card strong,
@@ -2918,6 +2922,16 @@ textarea:disabled {
   overflow-wrap: break-word;
 }
 
+.order-sticky-items {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 760;
+  line-height: 1.35;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
 .order-sticky-actions {
   display: flex;
   gap: 8px;
@@ -2930,6 +2944,12 @@ textarea:disabled {
   border-radius: 12px;
   font-size: 0.8rem;
   white-space: nowrap;
+}
+
+.list-row-action-stack {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
 }
 
 .order-toggle-grid,
@@ -3003,6 +3023,55 @@ textarea:disabled {
   gap: 10px;
 }
 
+.species-selector {
+  display: grid;
+  gap: 10px;
+}
+
+.species-selector-title {
+  color: #0f172a;
+  font-size: 0.96rem;
+  font-weight: 780;
+  letter-spacing: -0.02em;
+}
+
+.species-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.species-chip {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  background: #ffffff;
+  color: #0f172a;
+  text-align: left;
+}
+
+.species-chip strong,
+.species-chip span {
+  min-width: 0;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.species-chip span {
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.species-chip.active {
+  border-color: rgba(37, 99, 235, 0.42);
+  background: #eff6ff;
+  box-shadow: 0 14px 34px rgba(37, 99, 235, 0.1);
+}
+
 .market-item-card {
   display: grid;
   gap: 8px;
@@ -3013,6 +3082,10 @@ textarea:disabled {
   background: #fff;
   color: #0f172a;
   text-align: left;
+}
+
+.market-item-card.variant strong {
+  font-size: 1rem;
 }
 
 .market-item-grid .empty-order-card {
@@ -3425,6 +3498,10 @@ textarea:disabled {
     grid-template-columns: 1fr;
   }
 
+  .species-chip-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .selected-order-card,
   .empty-order-card {
     grid-template-columns: 1fr;
@@ -3502,6 +3579,16 @@ textarea:disabled {
     border-radius: 16px;
   }
 
+  .species-chip-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .species-chip {
+    padding: 12px 13px;
+    border-radius: 16px;
+  }
+
   .simple-choice-card span,
   .market-item-card > span:not(.market-item-top) {
     font-size: 0.8rem;
@@ -3546,6 +3633,11 @@ textarea:disabled {
 
   .reservation-structured-grid {
     grid-template-columns: 1fr;
+  }
+
+  .list-row-action-stack {
+    width: 100%;
+    justify-items: stretch;
   }
 }
 

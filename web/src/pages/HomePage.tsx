@@ -221,12 +221,20 @@ export function HomePage() {
                     </strong>
                     <StatusBadge value={item.sale_status} />
                     {item.sale_status !== "sold_out" ? (
-                      <Link
-                        className="secondary-button compact-button list-row-action"
-                        to={`/customer/order?item=${encodeURIComponent(item.item_name)}`}
-                      >
-                        이 품목 주문
-                      </Link>
+                      <div className="list-row-action-stack">
+                        <Link
+                          className="secondary-button compact-button list-row-action"
+                          to={`/customer/order?item=${encodeURIComponent(item.item_name)}`}
+                        >
+                          이 품목 주문
+                        </Link>
+                        <Link
+                          className="text-link"
+                          to={`/customer/order?item=${encodeURIComponent(item.item_name)}&half=1`}
+                        >
+                          반마리 문의
+                        </Link>
+                      </div>
                     ) : null}
                   </div>
                 </div>

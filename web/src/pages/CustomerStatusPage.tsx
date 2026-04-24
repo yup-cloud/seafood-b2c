@@ -32,6 +32,8 @@ async function copyTextToClipboard(text: string) {
 export function CustomerStatusPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [orderNoInput, setOrderNoInput] = useState(searchParams.get("orderNo") ?? "");
+  const [activeOrderNo, setActiveOrderNo] = useState(searchParams.get("orderNo") ?? "");
+  const [activeToken, setActiveToken] = useState(searchParams.get("token") ?? "");
   const [order, setOrder] = useState<PublicOrderStatus | null>(null);
   const [message, setMessage] = useState("");
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
@@ -39,22 +41,27 @@ export function CustomerStatusPage() {
   const [copyMessage, setCopyMessage] = useState("");
   // ✅ 개선: 데모 상태 여부를 별도로 추적
   const [isDemo, setIsDemo] = useState(false);
-  const hasDirectLinkToken = Boolean(searchParams.get("token"));
-  const isSubmittedView = searchParams.get("submitted") === "1";
-
-  useEffect(() => {
-    setOrderNoInput(searchParams.get("orderNo") ?? "");
-  }, [searchParams]);
+  const [isSubmittedView] = useState(searchParams.get("submitted") === "1");
+  const hasDirectLinkToken = Boolean(activeToken);
 
   useEffect(() => {
     const token = searchParams.get("token");
     const orderNo = searchParams.get("orderNo");
-    if (!token && !orderNo) {
+    if (token) {
+      setActiveToken(token);
+    }
+    if (orderNo) {
+      setActiveOrderNo(orderNo);
+      setOrderNoInput(orderNo);
+      setSearchParams(token ? { token } : {}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!activeToken && !activeOrderNo) {
       return;
     }
 
-    const requestedToken = token;
-    const requestedOrderNo = orderNo;
     let cancelled = false;
 
     async function load(silent = false) {
@@ -63,9 +70,9 @@ export function CustomerStatusPage() {
       }
 
       try {
-        const nextOrder = requestedToken
-          ? await api.getPublicOrder(requestedToken)
-          : await api.getPublicOrderByOrderNo(requestedOrderNo ?? "");
+        const nextOrder = activeToken
+          ? await api.getPublicOrder(activeToken)
+          : await api.getPublicOrderByOrderNo(activeOrderNo);
         if (cancelled) return;
         setOrder(nextOrder);
         setIsDemo(false);
@@ -105,7 +112,7 @@ export function CustomerStatusPage() {
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [searchParams]);
+  }, [activeOrderNo, activeToken]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,22 +120,25 @@ export function CustomerStatusPage() {
       setMessage("주문 후 안내받은 주문번호를 입력해 주세요.");
       return;
     }
-    setSearchParams({ orderNo: orderNoInput.trim().toUpperCase() });
+    const normalizedOrderNo = orderNoInput.trim().toUpperCase();
+    setActiveToken("");
+    setActiveOrderNo(normalizedOrderNo);
+    setOrderNoInput(normalizedOrderNo);
+    setSearchParams({}, { replace: true });
+    setMessage("");
   }
 
   async function handleRefresh() {
-    const token = searchParams.get("token");
-    const orderNo = searchParams.get("orderNo");
-    if (!token && !orderNo) {
+    if (!activeToken && !activeOrderNo) {
       setMessage("주문번호를 먼저 입력해 주세요.");
       return;
     }
 
     setRefreshing(true);
     try {
-      const nextOrder = token
-        ? await api.getPublicOrder(token)
-        : await api.getPublicOrderByOrderNo(orderNo ?? "");
+      const nextOrder = activeToken
+        ? await api.getPublicOrder(activeToken)
+        : await api.getPublicOrderByOrderNo(activeOrderNo);
       setOrder(nextOrder);
       setIsDemo(false);
       setMessage("");
@@ -169,12 +179,31 @@ export function CustomerStatusPage() {
 
       {/* ✅ 개선: 주문 접수 완료 히어로 */}
       {isSubmittedView ? (
-        <section className="order-success-hero">
-          <div className="order-success-icon">✓</div>
-          <p>주문서가 접수됐습니다</p>
-          <strong>{searchParams.get("orderNo") ?? order?.order_no ?? "주문번호 확인 중"}</strong>
-          <span>이 번호로 금액 안내, 입금 확인, 준비 상태를 다시 조회할 수 있습니다.</span>
-        </section>
+        <>
+          <section className="order-success-hero">
+            <div className="order-success-icon">✓</div>
+            <p>주문서가 접수됐습니다</p>
+            <strong>{activeOrderNo || order?.order_no || "주문번호 확인 중"}</strong>
+            <span>이 번호로 금액 안내, 입금 확인, 준비 상태를 다시 조회할 수 있습니다.</span>
+          </section>
+
+          <SectionCard title="접수 후 이렇게 진행됩니다" subtitle="처음 주문하셨다면 아래 순서만 보면 됩니다.">
+            <div className="support-grid">
+              <div className="support-card">
+                <strong>1. 먼저 금액 안내를 기다려 주세요</strong>
+                <p>품목 상태와 실제 중량을 확인한 뒤 최종 금액을 안내합니다. 바로 입금하지 않아도 됩니다.</p>
+              </div>
+              <div className="support-card">
+                <strong>2. 금액 안내를 받으면 입금해 주세요</strong>
+                <p>입금 확인이 되면 손질과 준비가 시작됩니다. 입금자명이 다르면 함께 알려주시면 더 빠릅니다.</p>
+              </div>
+              <div className="support-card highlight">
+                <strong>3. 다시 들어올 때는 주문번호만 확인하세요</strong>
+                <p>아래 조회 화면에서 주문번호로 현재 진행 상태를 다시 확인할 수 있습니다.</p>
+              </div>
+            </div>
+          </SectionCard>
+        </>
       ) : null}
 
       <SectionCard title="주문번호 입력" subtitle="주문 후 안내받은 주문번호를 입력해 주세요.">
