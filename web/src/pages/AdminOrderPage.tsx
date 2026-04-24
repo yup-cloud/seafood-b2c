@@ -70,6 +70,69 @@ function calculateItemSubtotal(order: AdminOrderDetail): string {
   return subtotal > 0 ? String(Math.round(subtotal)) : "";
 }
 
+async function copyTextToClipboard(text: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+  if (!copied) {
+    throw new Error("copy_failed");
+  }
+}
+
+function buildFulfillmentNotice(order: AdminOrderDetail, fulfillmentStatus: string, trackingNo: string) {
+  const greeting = `${order.customer_name}님, ${order.order_no} 주문 안내입니다.`;
+
+  if (fulfillmentStatus === "parcel_sent") {
+    return [
+      greeting,
+      "택배 출고가 완료되었습니다.",
+      trackingNo ? `송장번호: ${trackingNo}` : "송장번호는 확인 후 추가 안내드릴게요.",
+      "상품 수령 후 냉장 보관해 주세요."
+    ].join("\n");
+  }
+
+  if (fulfillmentStatus === "quick_sent") {
+    return [
+      greeting,
+      "퀵으로 전달을 시작했습니다.",
+      "도착 전 연락을 드리거나 기사님이 안내드릴 수 있습니다."
+    ].join("\n");
+  }
+
+  if (fulfillmentStatus === "pickup_waiting") {
+    return [
+      greeting,
+      "픽업 준비가 거의 마무리되었습니다.",
+      "방문 가능 시간에 맞춰 매장으로 와 주세요."
+    ].join("\n");
+  }
+
+  if (fulfillmentStatus === "pickup_done") {
+    return [
+      greeting,
+      "픽업 완료로 처리되었습니다.",
+      "이용해 주셔서 감사합니다."
+    ].join("\n");
+  }
+
+  return [
+    greeting,
+    `${formatStatusLabel(fulfillmentStatus)} 상태로 업데이트되었습니다.`,
+    "주문 상태 페이지에서도 같은 내용을 확인할 수 있습니다."
+  ].join("\n");
+}
+
 export function AdminOrderPage() {
   const { orderId = "" } = useParams();
   const [order, setOrder] = useState<AdminOrderDetail>(demoAdminOrderDetail);
@@ -93,6 +156,13 @@ export function AdminOrderPage() {
     parcelTrackingNo: demoAdminOrderDetail.fulfillment?.parcel_tracking_no ?? "",
     packingNote: demoAdminOrderDetail.fulfillment?.packing_note ?? ""
   });
+  const [fulfillmentNoticeMessage, setFulfillmentNoticeMessage] = useState(
+    buildFulfillmentNotice(
+      demoAdminOrderDetail,
+      demoAdminOrderDetail.fulfillment?.fulfillment_status ?? demoAdminOrderDetail.fulfillment_status,
+      demoAdminOrderDetail.fulfillment?.parcel_tracking_no ?? ""
+    )
+  );
 
   // ✅ 개선: toast 자동 소멸 (4초 후)
   useEffect(() => {
@@ -134,6 +204,12 @@ export function AdminOrderPage() {
     };
   }, [orderId]);
 
+  useEffect(() => {
+    setFulfillmentNoticeMessage(
+      buildFulfillmentNotice(order, fulfillmentForm.fulfillmentStatus, fulfillmentForm.parcelTrackingNo)
+    );
+  }, [fulfillmentForm.fulfillmentStatus, fulfillmentForm.parcelTrackingNo, order]);
+
   function showToast(message: string, type: ToastState["type"] = "info") {
     setToast({ message, type });
   }
@@ -159,6 +235,13 @@ export function AdminOrderPage() {
       parcelTrackingNo: nextOrder.fulfillment?.parcel_tracking_no ?? "",
       packingNote: nextOrder.fulfillment?.packing_note ?? ""
     });
+    setFulfillmentNoticeMessage(
+      buildFulfillmentNotice(
+        nextOrder,
+        nextOrder.fulfillment?.fulfillment_status ?? nextOrder.fulfillment_status,
+        nextOrder.fulfillment?.parcel_tracking_no ?? ""
+      )
+    );
   }
 
   async function reloadOrder() {
@@ -209,8 +292,15 @@ export function AdminOrderPage() {
 
   async function handleFulfillmentSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const noticeText = buildFulfillmentNotice(order, fulfillmentForm.fulfillmentStatus, fulfillmentForm.parcelTrackingNo);
     if (mode === "demo") {
-      showToast("데모 모드입니다. API 서버 연결 후 출고 정보 저장 가능합니다.", "info");
+      setFulfillmentNoticeMessage(noticeText);
+      try {
+        await copyTextToClipboard(noticeText);
+        showToast("데모 모드입니다. 고객 안내 문구를 복사했습니다.", "info");
+      } catch {
+        showToast("데모 모드입니다. 안내 문구는 아래에서 직접 복사해 주세요.", "info");
+      }
       return;
     }
     try {
@@ -220,7 +310,13 @@ export function AdminOrderPage() {
         parcel_tracking_no: fulfillmentForm.parcelTrackingNo || undefined,
         packing_note: fulfillmentForm.packingNote || undefined
       });
-      showToast("출고 정보를 저장했습니다.", "success");
+      setFulfillmentNoticeMessage(noticeText);
+      try {
+        await copyTextToClipboard(noticeText);
+        showToast("출고 정보를 저장했고 고객 안내 문구를 복사했습니다.", "success");
+      } catch {
+        showToast("출고 정보를 저장했습니다. 고객 안내 문구는 아래에서 복사해 주세요.", "success");
+      }
       await reloadOrder();
     } catch {
       showToast("출고 정보 저장 중 오류가 발생했습니다.", "error");
@@ -248,7 +344,9 @@ export function AdminOrderPage() {
 
   async function handleQuickFulfillment(fulfillmentStatus: string) {
     setFulfillmentForm((current) => ({ ...current, fulfillmentStatus }));
+    const noticeText = buildFulfillmentNotice(order, fulfillmentStatus, fulfillmentForm.parcelTrackingNo);
     if (mode === "demo") {
+      setFulfillmentNoticeMessage(noticeText);
       showToast(`${formatStatusLabel(fulfillmentStatus)} 상태로 변경합니다. API 연결 후 실제 저장됩니다.`, "info");
       return;
     }
@@ -259,10 +357,25 @@ export function AdminOrderPage() {
         parcel_tracking_no: fulfillmentForm.parcelTrackingNo || undefined,
         packing_note: fulfillmentForm.packingNote || undefined
       });
-      showToast(`${formatStatusLabel(fulfillmentStatus)} 처리 완료`, "success");
+      setFulfillmentNoticeMessage(noticeText);
+      try {
+        await copyTextToClipboard(noticeText);
+        showToast(`${formatStatusLabel(fulfillmentStatus)} 처리 후 고객 안내 문구를 복사했습니다.`, "success");
+      } catch {
+        showToast(`${formatStatusLabel(fulfillmentStatus)} 처리 완료`, "success");
+      }
       await reloadOrder();
     } catch {
       showToast("상태 변경 중 오류가 발생했습니다.", "error");
+    }
+  }
+
+  async function handleCopyFulfillmentNotice() {
+    try {
+      await copyTextToClipboard(fulfillmentNoticeMessage);
+      showToast("고객 안내 문구를 복사했습니다.", "success");
+    } catch {
+      showToast("자동 복사가 되지 않았습니다. 안내 문구를 직접 복사해 주세요.", "error");
     }
   }
 
@@ -632,6 +745,19 @@ export function AdminOrderPage() {
                 출고 정보 저장
               </button>
             </form>
+            <div className="notice-panel" style={{ marginTop: "12px" }}>
+              <strong>고객 안내 문구</strong>
+              <p>출고 저장 후 바로 보낼 수 있는 문구입니다. 저장 시 자동 복사를 시도합니다.</p>
+            </div>
+            <textarea
+              className="kakao-notice-preview small"
+              value={fulfillmentNoticeMessage}
+              readOnly
+              aria-label="출고 안내 문구"
+            />
+            <button type="button" className="secondary-button full-width" onClick={() => void handleCopyFulfillmentNotice()}>
+              고객 안내 문구 복사
+            </button>
           </SectionCard>
         </div>
       </div>

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { demoOrderOptions, demoOrderResult, demoPriceBoard, demoStore } from "../data/demo";
-import { api } from "../lib/api";
+import { api, isNetworkError } from "../lib/api";
 import { formatCurrency, formatItemName, formatItemNote, formatStatusLabel } from "../lib/format";
 import { OrderFormOptions, PriceBoardItem, PriceBoardResponse, PublicOrderPayload, StoreInfo } from "../types";
 
@@ -303,6 +303,7 @@ export function CustomerOrderPage() {
   const [hasEditedDepositorName, setHasEditedDepositorName] = useState(false);
   const [highlightNextCta, setHighlightNextCta] = useState(false);
   const [fulfillmentConflict, setFulfillmentConflict] = useState<FulfillmentConflict | null>(null);
+  const [keyboardInset, setKeyboardInset] = useState(0);
   const stepBodyRef = useRef<HTMLDivElement>(null);
   const selectedItemsRef = useRef<SelectedOrderItem[]>([]);
 
@@ -515,6 +516,26 @@ export function CustomerOrderPage() {
 
     return () => window.cancelAnimationFrame(frameId);
   }, [currentStep]);
+
+  useEffect(() => {
+    if (!window.visualViewport) return;
+
+    const updateViewportInset = () => {
+      const viewport = window.visualViewport;
+      if (!viewport) return;
+      const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      setKeyboardInset(inset > 120 ? inset : 0);
+    };
+
+    updateViewportInset();
+    window.visualViewport.addEventListener("resize", updateViewportInset);
+    window.visualViewport.addEventListener("scroll", updateViewportInset);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", updateViewportInset);
+      window.visualViewport?.removeEventListener("scroll", updateViewportInset);
+    };
+  }, []);
 
   function updateField<K extends keyof OrderFormState>(key: K, value: OrderFormState[K]) {
     if (key === "fulfillment_type" && value === "parcel") {
@@ -808,7 +829,11 @@ export function CustomerOrderPage() {
     try {
       const result = await api.createOrder(payload);
       navigate(`/customer/status?orderNo=${encodeURIComponent(result.order_no)}&submitted=1`);
-    } catch {
+    } catch (error) {
+      if (isNetworkError(error)) {
+        setSubmitMessage("인터넷 연결이 불안정합니다. 연결 후 다시 주문해 주세요.");
+        return;
+      }
       setSubmitMessage("지금은 미리보기 환경이라 예시 주문 확인 화면으로 이동합니다.");
       navigate(`/customer/status?token=${encodeURIComponent(demoOrderResult.public_token)}&submitted=1`);
     } finally {
@@ -1568,6 +1593,10 @@ export function CustomerOrderPage() {
 
   const nextButtonLabel =
     currentStep === 0 && items.length > 0 ? "수령 방식 선택하기 →" : "다음";
+  const stickyBottomOffset =
+    currentStep === 3 && keyboardInset > 0 && window.innerWidth <= 640
+      ? `${keyboardInset + 12}px`
+      : undefined;
 
   return (
     <form className="page-content order-simple-page order-conversion-page" onSubmit={handleSubmit} noValidate>
@@ -1620,7 +1649,11 @@ export function CustomerOrderPage() {
         </div>
       ) : null}
 
-      <div className={`order-sticky-cta${highlightNextCta ? " pulse" : ""}`} aria-live="polite">
+      <div
+        className={`order-sticky-cta${highlightNextCta ? " pulse" : ""}${stickyBottomOffset ? " keyboard-open" : ""}`}
+        aria-live="polite"
+        style={stickyBottomOffset ? { bottom: stickyBottomOffset } : undefined}
+      >
         <div className="order-sticky-copy">
           <span>
             {items.length}개 품목 · {orderSteps[currentStep].title}

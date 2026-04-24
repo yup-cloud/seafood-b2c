@@ -100,6 +100,8 @@ export function AdminDashboardPage() {
   const [isLoadingPreviousBoard, setIsLoadingPreviousBoard] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showNoticeStepCta, setShowNoticeStepCta] = useState(false);
+  const [processingReviewOrderId, setProcessingReviewOrderId] = useState<string | null>(null);
   // ✅ 버그 수정: refreshKey로 수동 새로고침 트리거
   const [refreshKey, setRefreshKey] = useState(0);
   // ✅ 개선: 오늘 시세 반영 전 확인 다이얼로그
@@ -294,6 +296,7 @@ export function AdminDashboardPage() {
 
   function handleParsePriceText() {
     const parsed = parsePriceBoardNotice(pricePaste, getKoreaTodayDate());
+    setShowNoticeStepCta(false);
 
     setParsedPreview({
       ...board,
@@ -372,6 +375,7 @@ export function AdminDashboardPage() {
     const previousDate = toDateOffset(todayDate, -1);
     setIsLoadingPreviousBoard(true);
     setParseMessage("");
+    setShowNoticeStepCta(false);
 
     try {
       const previous = await api.getAdminPriceBoard(previousDate);
@@ -484,11 +488,36 @@ export function AdminDashboardPage() {
       setBoard(source);
       setParsedPreview(source);
       setParseMessage("오늘 시세로 반영했습니다. 관리자와 고객 화면에 같은 내용이 보이도록 게시가 완료되었습니다.");
+      setShowNoticeStepCta(true);
       setMode("live");
+      window.setTimeout(() => scrollToAdminSection("admin-kakao-notice"), 160);
     } catch {
       setParseMessage("자동 반영 중 문제가 발생했습니다. 자동 추출 결과를 확인한 뒤 다시 시도해 주세요.");
     } finally {
       setIsSavingBoard(false);
+    }
+  }
+
+  async function handleQuickReviewConfirm(item: PaymentReviewItem) {
+    if (!item.expected_amount) {
+      setCopyMessage("예상 금액이 없어 자동 확인할 수 없습니다. 주문 상세에서 확인해 주세요.");
+      return;
+    }
+
+    if (mode === "demo") {
+      setCopyMessage("데모 모드에서는 실제 입금 확인이 저장되지 않습니다.");
+      return;
+    }
+
+    setProcessingReviewOrderId(item.order_id);
+    try {
+      await api.confirmPayment(item.order_id, Number(item.expected_amount), "입금 검토 큐 빠른 확인");
+      setCopyMessage(`${item.order_no} 주문의 입금 확인을 반영했습니다.`);
+      await loadRef.current?.(true);
+    } catch {
+      setCopyMessage("입금 검토 큐 처리 중 오류가 발생했습니다. 주문 상세에서 다시 확인해 주세요.");
+    } finally {
+      setProcessingReviewOrderId(null);
     }
   }
 
@@ -638,6 +667,17 @@ export function AdminDashboardPage() {
             </p>
           </div>
           {parseMessage ? <p className="helper-text" aria-live="polite">{parseMessage}</p> : null}
+          {showNoticeStepCta ? (
+            <div className="button-row">
+              <button
+                type="button"
+                className="primary-button compact-button"
+                onClick={() => scrollToAdminSection("admin-kakao-notice")}
+              >
+                4단계 카톡 공지로 이동
+              </button>
+            </div>
+          ) : null}
         </div>
         <div className="import-preview-grid">
           {(parsedPreview?.items ?? board.items).map((item, index) => (
@@ -940,6 +980,19 @@ export function AdminDashboardPage() {
                         <strong>{formatCurrency(candidate.amount)}</strong>
                       </div>
                     ))}
+                    <div className="button-row">
+                      <button
+                        type="button"
+                        className="primary-button compact-button"
+                        onClick={() => { void handleQuickReviewConfirm(item); }}
+                        disabled={processingReviewOrderId === item.order_id || !item.expected_amount}
+                      >
+                        {processingReviewOrderId === item.order_id ? "처리 중..." : "이 금액으로 확인"}
+                      </button>
+                      <Link className="secondary-button compact-button" to={`/admin/orders/${item.order_id}`}>
+                        상세 확인
+                      </Link>
+                    </div>
                   </div>
                 ))
               ) : (

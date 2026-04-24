@@ -25,6 +25,18 @@ interface ApiErrorEnvelope {
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
+export class ApiRequestError extends Error {
+  kind: "network" | "http";
+  status?: number;
+
+  constructor(message: string, kind: "network" | "http", status?: number) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.kind = kind;
+    this.status = status;
+  }
+}
+
 export interface AdminOrderFilters {
   search?: string;
   order_status?: string;
@@ -46,17 +58,27 @@ function buildQueryString(filters?: AdminOrderFilters): string {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {})
-    },
-    ...init
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${apiBaseUrl}${path}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers ?? {})
+      },
+      ...init
+    });
+  } catch {
+    throw new ApiRequestError("네트워크 연결을 확인해 주세요.", "network");
+  }
 
   if (!response.ok) {
     const errorPayload = (await response.json().catch(() => null)) as ApiErrorEnvelope | null;
-    throw new Error(errorPayload?.error.message ?? "요청 처리 중 오류가 발생했습니다.");
+    throw new ApiRequestError(
+      errorPayload?.error.message ?? "요청 처리 중 오류가 발생했습니다.",
+      "http",
+      response.status
+    );
   }
 
   const payload = (await response.json()) as ApiEnvelope<T>;
@@ -170,3 +192,7 @@ export const api = {
   getFulfillments: () =>
     request<{ fulfillments: FulfillmentQueueItem[] }>("/admin/fulfillments")
 };
+
+export function isNetworkError(error: unknown): boolean {
+  return error instanceof ApiRequestError && error.kind === "network";
+}

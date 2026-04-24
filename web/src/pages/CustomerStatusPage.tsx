@@ -29,6 +29,20 @@ async function copyTextToClipboard(text: string) {
   }
 }
 
+async function shareOrderLink(shareUrl: string, orderNo: string) {
+  if (navigator.share) {
+    await navigator.share({
+      title: `오늘바다 주문 ${orderNo}`,
+      text: `주문번호 ${orderNo} 진행 상황 확인 링크입니다.`,
+      url: shareUrl
+    });
+    return "shared";
+  }
+
+  await copyTextToClipboard(shareUrl);
+  return "copied";
+}
+
 export function CustomerStatusPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [orderNoInput, setOrderNoInput] = useState(searchParams.get("orderNo") ?? "");
@@ -39,6 +53,7 @@ export function CustomerStatusPage() {
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
+  const [shareMessage, setShareMessage] = useState("");
   // ✅ 개선: 데모 상태 여부를 별도로 추적
   const [isDemo, setIsDemo] = useState(false);
   const [isSubmittedView] = useState(searchParams.get("submitted") === "1");
@@ -165,6 +180,30 @@ export function CustomerStatusPage() {
     }
   }
 
+  async function handleShareOrder() {
+    const shareTarget = activeToken
+      ? `${window.location.origin}/customer/status?token=${encodeURIComponent(activeToken)}`
+      : activeOrderNo
+        ? `${window.location.origin}/customer/status?orderNo=${encodeURIComponent(activeOrderNo)}`
+        : "";
+
+    if (!shareTarget) {
+      setShareMessage("공유할 주문번호가 없습니다.");
+      return;
+    }
+
+    try {
+      const result = await shareOrderLink(shareTarget, activeOrderNo || order?.order_no || "주문");
+      setShareMessage(
+        result === "shared"
+          ? "주문 조회 링크를 공유했습니다."
+          : "주문 조회 링크를 복사했습니다."
+      );
+    } catch {
+      setShareMessage("공유가 취소되었거나 자동 복사가 되지 않았습니다.");
+    }
+  }
+
   const currentStepIndex = order ? statusFlow.indexOf(order.order_status) : -1;
 
   return (
@@ -185,6 +224,12 @@ export function CustomerStatusPage() {
             <p>주문서가 접수됐습니다</p>
             <strong>{activeOrderNo || order?.order_no || "주문번호 확인 중"}</strong>
             <span>이 번호로 금액 안내, 입금 확인, 준비 상태를 다시 조회할 수 있습니다.</span>
+            <div className="button-row">
+              <button type="button" className="secondary-button compact-button" onClick={() => void handleShareOrder()}>
+                내 주문 공유하기
+              </button>
+            </div>
+            {shareMessage ? <small className="copy-feedback" aria-live="polite">{shareMessage}</small> : null}
           </section>
 
           <SectionCard title="접수 후 이렇게 진행됩니다" subtitle="처음 주문하셨다면 아래 순서만 보면 됩니다.">
@@ -235,12 +280,18 @@ export function CustomerStatusPage() {
             <p aria-live="polite">
               {lastUpdatedAt ? `최근 확인 ${formatDateTime(lastUpdatedAt)} · 30초마다 자동 새로고침` : "주문 상태를 불러오는 중입니다."}
             </p>
-            <button type="button" className="secondary-button compact-button" onClick={handleRefresh} disabled={refreshing}>
-              {refreshing ? "확인 중..." : "지금 다시 확인"}
-            </button>
+            <div className="button-row">
+              <button type="button" className="secondary-button compact-button" onClick={() => void handleShareOrder()}>
+                공유
+              </button>
+              <button type="button" className="secondary-button compact-button" onClick={handleRefresh} disabled={refreshing}>
+                {refreshing ? "확인 중..." : "지금 다시 확인"}
+              </button>
+            </div>
           </div>
         ) : null}
         {message ? <p className="helper-text" aria-live="polite">{message}</p> : null}
+        {shareMessage && !isSubmittedView ? <p className="helper-text" aria-live="polite">{shareMessage}</p> : null}
         <div className="inline-actions">
           <Link to="/customer/order?restoreRecent=1" className="secondary-button compact-button">
             같은 방식으로 다시 주문하기

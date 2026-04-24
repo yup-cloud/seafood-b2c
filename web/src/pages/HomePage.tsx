@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { demoHalfOrderDemands, demoPriceBoard, demoStore } from "../data/demo";
-import { api } from "../lib/api";
+import { api, isNetworkError } from "../lib/api";
 import { formatCurrency, formatDate, formatItemName, formatProcessingRuleSummary } from "../lib/format";
 import { PriceBoardResponse, StoreInfo } from "../types";
 
@@ -33,6 +33,9 @@ export function HomePage() {
   const [store, setStore] = useState<StoreInfo>(demoStore);
   const [board, setBoard] = useState<PriceBoardResponse>(demoPriceBoard);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+  const [refreshMessage, setRefreshMessage] = useState("");
   const cutoffWindows = board.order_guide.cutoff_windows ?? [
     { fulfillment_type: "pickup", label: "매장 픽업", cutoff_note: board.order_guide.pickup_note },
     { fulfillment_type: "quick", label: "퀵 수령", cutoff_note: board.order_guide.quick_note },
@@ -40,43 +43,53 @@ export function HomePage() {
   ];
   const boardDateLabel = resolveBoardDateLabel(board.board_date);
 
+  const load = useCallback(
+    async (silent = false) => {
+      if (!silent) {
+        setRefreshing(true);
+      }
+      try {
+        const [nextStore, nextBoard] = await Promise.all([api.getStore(), api.getPriceBoard()]);
+        setStore(nextStore);
+        setBoard(nextBoard);
+        setRefreshMessage("");
+        setLastUpdatedAt(new Date());
+      } catch (error) {
+        setStore(demoStore);
+        setBoard(demoPriceBoard);
+        setRefreshMessage(
+          isNetworkError(error)
+            ? "인터넷 연결이 불안정해 최근 예시 시세를 표시하고 있습니다."
+            : "실시간 시세를 불러오지 못해 예시 시세를 표시하고 있습니다."
+        );
+        setLastUpdatedAt(new Date());
+      } finally {
+        setInitialLoading(false);
+        setRefreshing(false);
+      }
+    },
+    []
+  );
+
   useEffect(() => {
     let cancelled = false;
 
-    async function load() {
-      try {
-        const [nextStore, nextBoard] = await Promise.all([api.getStore(), api.getPriceBoard()]);
-
-        if (cancelled) {
-          return;
-        }
-
-        setStore(nextStore);
-        setBoard(nextBoard);
-      } catch {
-        if (cancelled) {
-          return;
-        }
-        setStore(demoStore);
-        setBoard(demoPriceBoard);
-      } finally {
-        if (!cancelled) {
-          setInitialLoading(false);
-        }
-      }
+    async function loadSafely(silent = false) {
+      if (cancelled) return;
+      await load(silent);
     }
 
-    void load();
+    void loadSafely();
 
     const intervalId = window.setInterval(() => {
       if (document.visibilityState === "visible") {
-        void load();
+        void loadSafely(true);
       }
     }, 60000);
 
     function handleVisibilityChange() {
       if (document.visibilityState === "visible") {
-        void load();
+        void loadSafely(true);
       }
     }
 
@@ -87,7 +100,7 @@ export function HomePage() {
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, []);
+  }, [load]);
 
   return (
     <div className="page-content">
@@ -193,9 +206,27 @@ export function HomePage() {
         <SectionCard
           title="오늘 준비 가능한 품목"
           subtitle="원하시는 생선과 시세를 먼저 보고, 바로 주문서에 담아 시작할 수 있습니다."
-          action={<Link to="/customer/order" className="text-link">주문서 바로가기</Link>}
+          action={
+            <div className="button-row">
+              <button
+                type="button"
+                className="secondary-button compact-button"
+                onClick={() => void load()}
+                disabled={refreshing}
+              >
+                {refreshing ? "확인 중..." : "지금 확인"}
+              </button>
+              <Link to="/customer/order" className="text-link">주문서 바로가기</Link>
+            </div>
+          }
         >
           <div className="stack-list">
+            {lastUpdatedAt ? (
+              <p className="field-hint">
+                최근 확인 {lastUpdatedAt.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+              </p>
+            ) : null}
+            {refreshMessage ? <p className="helper-text">{refreshMessage}</p> : null}
             {initialLoading ? (
               <>
                 <div className="skeleton" style={{ height: "68px", borderRadius: "20px" }} />

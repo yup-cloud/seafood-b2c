@@ -1,4 +1,4 @@
-import { FormEvent, PropsWithChildren, useState } from "react";
+import { FormEvent, PropsWithChildren, useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { grantAdminAccess } from "../lib/admin-access";
 
@@ -14,7 +14,37 @@ export function AppShell({ children }: PropsWithChildren) {
   const [isAccessOpen, setIsAccessOpen] = useState(false);
   const [accessToken, setAccessToken] = useState("");
   const [accessError, setAccessError] = useState("");
+  const [isOffline, setIsOffline] = useState(
+    typeof navigator !== "undefined" ? !navigator.onLine : false
+  );
+  const [connectionMessage, setConnectionMessage] = useState("");
   const isAdminPath = location.pathname.startsWith("/admin");
+
+  useEffect(() => {
+    function handleOffline() {
+      setIsOffline(true);
+      setConnectionMessage("인터넷 연결이 끊어졌습니다. 일부 화면은 예시 데이터로 보일 수 있습니다.");
+    }
+
+    function handleOnline() {
+      setIsOffline(false);
+      setConnectionMessage("인터넷 연결이 복구되었습니다. 화면을 다시 불러옵니다.");
+    }
+
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!connectionMessage || isOffline) return;
+    const timer = window.setTimeout(() => setConnectionMessage(""), 3500);
+    return () => window.clearTimeout(timer);
+  }, [connectionMessage, isOffline]);
 
   function closeAccessModal() {
     setIsAccessOpen(false);
@@ -61,6 +91,15 @@ export function AppShell({ children }: PropsWithChildren) {
           ))}
         </nav>
       </header>
+      {isOffline || connectionMessage ? (
+        <div
+          className={`network-banner${isOffline ? " offline" : " online"}`}
+          role="status"
+          aria-live="polite"
+        >
+          {connectionMessage || "인터넷 연결이 끊어졌습니다. 연결이 복구되면 자동으로 다시 불러옵니다."}
+        </div>
+      ) : null}
       <main className="page-frame">{children}</main>
       {!isAdminPath ? (
         <nav className="mobile-tabbar" aria-label="모바일 주요 메뉴">
