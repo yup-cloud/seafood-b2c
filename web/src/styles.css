@@ -2967,6 +2967,10 @@ textarea:disabled {
   min-width: 0;
 }
 
+.order-sticky-cta .selected-cart-panel.compact {
+  grid-column: 1 / -1;
+}
+
 .order-sticky-copy span,
 .order-sticky-copy small {
   color: #64748b;
@@ -3701,9 +3705,13 @@ textarea:disabled {
     gap: 10px;
   }
 
-  .selected-cart-controls,
+  .selected-cart-actions,
   .selected-cart-item .cart-remove-button {
     width: 100%;
+  }
+
+  .selected-cart-actions {
+    align-items: stretch;
   }
 
   .quantity-stepper {
@@ -3775,6 +3783,10 @@ textarea:disabled {
     padding-bottom: 230px;
   }
 
+  .order-conversion-page.has-sticky-cart {
+    padding-bottom: 360px;
+  }
+
   .order-stepper {
     margin-inline: -2px;
     padding: 8px;
@@ -3809,6 +3821,10 @@ textarea:disabled {
     gap: 10px;
     padding: 13px;
     border-radius: 22px;
+  }
+
+  .order-sticky-cta .selected-cart-panel.compact {
+    padding-top: 8px;
   }
 
   .order-sticky-actions {
@@ -4183,12 +4199,25 @@ textarea:disabled {
   background: linear-gradient(180deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.98));
 }
 
+.selected-cart-panel.compact {
+  gap: 8px;
+  padding: 10px 0 0;
+  border: 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 0;
+  background: transparent;
+}
+
 .selected-cart-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   min-width: 0;
+}
+
+.selected-cart-panel.compact .selected-cart-head {
+  align-items: flex-start;
 }
 
 .selected-cart-head div,
@@ -4218,28 +4247,50 @@ textarea:disabled {
   font-weight: 750;
 }
 
-.selected-cart-controls {
-  display: grid;
-  gap: 6px;
-  justify-items: start;
-  align-content: start;
-}
-
 .selected-cart-list {
   display: grid;
   gap: 8px;
 }
 
+.selected-cart-panel.compact .selected-cart-list {
+  gap: 6px;
+}
+
 .selected-cart-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 8px;
   align-items: start;
   min-width: 0;
   padding: 12px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 15px;
   background: #ffffff;
+}
+
+.selected-cart-panel.compact .selected-cart-item {
+  padding: 10px 0;
+  border: 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 0;
+  background: transparent;
+}
+
+.selected-cart-panel.compact .selected-cart-item:first-child {
+  padding-top: 2px;
+  border-top: 0;
+}
+
+.selected-cart-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.selected-cart-actions .quantity-stepper {
+  flex: 1 1 192px;
 }
 
 .quantity-stepper {
@@ -4281,13 +4332,14 @@ textarea:disabled {
 
 .cart-remove-button {
   min-height: 38px;
-  padding: 0 10px;
+  padding: 0 12px;
   border: 0;
   border-radius: 999px;
   background: rgba(239, 68, 68, 0.08);
   color: #dc2626;
   font-size: 0.82rem;
   font-weight: 850;
+  white-space: nowrap;
 }
 
 .bulk-order-hint {
@@ -4297,7 +4349,7 @@ textarea:disabled {
   font-weight: 750;
   line-height: 1.35;
   word-break: keep-all;
-  max-width: 132px;
+  max-width: 100%;
 }
 
 /* ── 아이템 예상 가격 뱃지 (Step 2) ─────────────────────── */

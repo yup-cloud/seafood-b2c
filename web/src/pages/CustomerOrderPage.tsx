@@ -852,13 +852,14 @@ export function CustomerOrderPage() {
     return null;
   }
 
-  function renderSelectedCartPanel() {
+  function renderSelectedCartPanel(options?: { compact?: boolean }) {
     if (!items.length) return null;
 
+    const compact = options?.compact ?? false;
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
     return (
-      <div className="selected-cart-panel" aria-label="담은 품목">
+      <div className={`selected-cart-panel${compact ? " compact" : ""}`} aria-label="담은 품목">
         <div className="selected-cart-head">
           <div>
             <strong>담은 품목</strong>
@@ -889,7 +890,7 @@ export function CustomerOrderPage() {
                     {estimate ? `예상 ${formatPriceRange(estimate.min, estimate.max)}` : "금액 확인 후 안내"}
                   </small>
                 </div>
-                <div className="selected-cart-controls">
+                <div className="selected-cart-actions">
                   <div className="quantity-stepper" aria-label={`${displayName} 수량 조절`}>
                     <button
                       type="button"
@@ -908,18 +909,18 @@ export function CustomerOrderPage() {
                       +
                     </button>
                   </div>
-                  {item.quantity >= 3 ? (
-                    <small className="bulk-order-hint">대량 주문은 전화 문의를 권장합니다.</small>
-                  ) : null}
+                  <button
+                    type="button"
+                    className="cart-remove-button"
+                    onClick={() => removeItem(item.id)}
+                    aria-label={`${displayName} 삭제`}
+                  >
+                    삭제
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="cart-remove-button"
-                  onClick={() => removeItem(item.id)}
-                  aria-label={`${displayName} 삭제`}
-                >
-                  삭제
-                </button>
+                {item.quantity >= 3 ? (
+                  <small className="bulk-order-hint">대량 주문은 전화 문의를 권장합니다.</small>
+                ) : null}
               </article>
             );
           })}
@@ -1081,7 +1082,6 @@ export function CustomerOrderPage() {
                       </div>
                     </>
                   ) : null}
-                  {renderSelectedCartPanel()}
                 </>
               ) : (
                 <div className="empty-board-state">
@@ -1140,7 +1140,6 @@ export function CustomerOrderPage() {
                   + 담기
                 </button>
               </div>
-              {renderSelectedCartPanel()}
             </div>
           )}
         </SectionCard>
@@ -1595,13 +1594,18 @@ export function CustomerOrderPage() {
 
   const nextButtonLabel =
     currentStep === 0 && items.length > 0 ? "수령 방식 선택하기 →" : "다음";
+  const hasStickyCart = items.length > 0 && currentStep <= 1;
   const stickyBottomOffset =
     currentStep === 3 && keyboardInset > 0 && window.innerWidth <= 640
       ? `${keyboardInset + 12}px`
       : undefined;
 
   return (
-    <form className="page-content order-simple-page order-conversion-page" onSubmit={handleSubmit} noValidate>
+    <form
+      className={`page-content order-simple-page order-conversion-page${hasStickyCart ? " has-sticky-cart" : ""}`}
+      onSubmit={handleSubmit}
+      noValidate
+    >
       <section className="page-hero compact">
         <div>
           <p className="eyebrow-text">주문하기</p>
@@ -1660,7 +1664,7 @@ export function CustomerOrderPage() {
           <span>
             {items.length}개 품목 · {orderSteps[currentStep].title}
           </span>
-          {items.length ? <p className="order-sticky-items">{selectedItemSummary}</p> : null}
+          {items.length && !hasStickyCart ? <p className="order-sticky-items">{selectedItemSummary}</p> : null}
           <strong>
             {estimates.itemRange.max > 0 ? formatPriceRange(estimates.totalMin, estimates.totalMax) : "예상 금액 대기"}
           </strong>
@@ -1668,6 +1672,7 @@ export function CustomerOrderPage() {
             {currentStepError || (estimates.itemRange.max > 0 ? "중량대 기준 추정 · 실제 중량 확인 후 안내" : orderSteps[currentStep].description)}
           </small>
         </div>
+        {hasStickyCart ? renderSelectedCartPanel({ compact: true }) : null}
         <div className="order-sticky-actions">
           {currentStep > 0 ? (
             <button type="button" className="secondary-button compact-button" onClick={handlePreviousStep}>
