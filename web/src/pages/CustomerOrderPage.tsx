@@ -889,27 +889,29 @@ export function CustomerOrderPage() {
                     {estimate ? `예상 ${formatPriceRange(estimate.min, estimate.max)}` : "금액 확인 후 안내"}
                   </small>
                 </div>
-                <div className="quantity-stepper" aria-label={`${displayName} 수량 조절`}>
-                  <button
-                    type="button"
-                    onClick={() => adjustItemQuantity(item.id, -unitQuantity)}
-                    disabled={item.quantity <= getMinimumQuantity()}
-                    aria-label={`${displayName} 수량 줄이기`}
-                  >
-                    -
-                  </button>
-                  <strong>{formatQuantityLabel(item.quantity)}</strong>
-                  <button
-                    type="button"
-                    onClick={() => adjustItemQuantity(item.id, unitQuantity)}
-                    aria-label={`${displayName} 수량 늘리기`}
-                  >
-                    +
-                  </button>
+                <div className="selected-cart-controls">
+                  <div className="quantity-stepper" aria-label={`${displayName} 수량 조절`}>
+                    <button
+                      type="button"
+                      onClick={() => adjustItemQuantity(item.id, -unitQuantity)}
+                      disabled={item.quantity <= getMinimumQuantity()}
+                      aria-label={`${displayName} 수량 줄이기`}
+                    >
+                      -
+                    </button>
+                    <strong>{formatQuantityLabel(item.quantity)}</strong>
+                    <button
+                      type="button"
+                      onClick={() => adjustItemQuantity(item.id, unitQuantity)}
+                      aria-label={`${displayName} 수량 늘리기`}
+                    >
+                      +
+                    </button>
+                  </div>
+                  {item.quantity >= 3 ? (
+                    <small className="bulk-order-hint">대량 주문은 전화 문의를 권장합니다.</small>
+                  ) : null}
                 </div>
-                {item.quantity >= 3 ? (
-                  <small className="bulk-order-hint">대량 주문은 전화 문의를 권장합니다.</small>
-                ) : null}
                 <button
                   type="button"
                   className="cart-remove-button"
