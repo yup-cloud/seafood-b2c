@@ -188,6 +188,26 @@ function formatQuantityLabel(quantity: number) {
   return `${normalized}마리`;
 }
 
+function formatCompactQuantityValue(quantity: number) {
+  return Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(1).replace(/\.0$/, "");
+}
+
+function formatCompactAmount(value: number) {
+  if (value >= 10000) {
+    const man = value / 10000;
+    const compact = man >= 10 ? Math.round(man).toString() : man.toFixed(1).replace(/\.0$/, "");
+    return `${compact}만`;
+  }
+  return formatCurrency(Math.round(value));
+}
+
+function formatCompactItemPrice(item: SelectedOrderItem) {
+  const estimate = estimateItemTotal(item);
+  if (!estimate) return "금액 안내";
+  const average = Math.round((estimate.min + estimate.max) / 2);
+  return formatCompactAmount(average);
+}
+
 function formatReservationDateLabel(date: string) {
   if (!date) return "";
   const [, month, day] = date.split("-");
@@ -871,7 +891,7 @@ export function CustomerOrderPage() {
             onClick={clearAllItems}
             aria-label="담은 품목 전체 비우기"
           >
-            전체 비우기
+            {compact ? "비우기" : "전체 비우기"}
           </button>
         </div>
 
@@ -879,18 +899,29 @@ export function CustomerOrderPage() {
           {items.map((item) => {
             const estimate = estimateItemTotal(item);
             const displayName = formatItemName(item.item_name);
+            const compactName = [getSpeciesLabel(displayName), item.size_band].filter(Boolean).join(" · ");
             return (
-              <article key={item.id} className="selected-cart-item">
-                <div className="selected-cart-main">
-                  <strong>{displayName}</strong>
-                  <span>
-                    {item.origin_label ?? "원산지 확인"} · {item.size_band ?? "크기 확인"}
-                  </span>
-                  <small>
-                    {estimate ? `예상 ${formatPriceRange(estimate.min, estimate.max)}` : "금액 확인 후 안내"}
-                  </small>
+              <article key={item.id} className={`selected-cart-item${compact ? " compact-row" : ""}`}>
+                <div className={`selected-cart-main${compact ? " compact" : ""}`}>
+                  {compact ? (
+                    <div className="selected-cart-compact-summary" title={displayName}>
+                      <strong>{compactName}</strong>
+                      <span className="selected-cart-compact-quantity">{formatQuantityLabel(item.quantity)}</span>
+                      <span className="selected-cart-compact-price">{formatCompactItemPrice(item)}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <strong>{displayName}</strong>
+                      <span>
+                        {item.origin_label ?? "원산지 확인"} · {item.size_band ?? "크기 확인"}
+                      </span>
+                      <small>
+                        {estimate ? `예상 ${formatPriceRange(estimate.min, estimate.max)}` : "금액 확인 후 안내"}
+                      </small>
+                    </>
+                  )}
                 </div>
-                <div className="selected-cart-actions">
+                <div className={`selected-cart-actions${compact ? " compact" : ""}`}>
                   <div className="quantity-stepper" aria-label={`${displayName} 수량 조절`}>
                     <button
                       type="button"
@@ -900,7 +931,7 @@ export function CustomerOrderPage() {
                     >
                       -
                     </button>
-                    <strong>{formatQuantityLabel(item.quantity)}</strong>
+                    <strong>{compact ? formatCompactQuantityValue(item.quantity) : formatQuantityLabel(item.quantity)}</strong>
                     <button
                       type="button"
                       onClick={() => adjustItemQuantity(item.id, unitQuantity)}
@@ -915,10 +946,10 @@ export function CustomerOrderPage() {
                     onClick={() => removeItem(item.id)}
                     aria-label={`${displayName} 삭제`}
                   >
-                    삭제
+                    {compact ? "×" : "삭제"}
                   </button>
                 </div>
-                {item.quantity >= 3 ? (
+                {!compact && item.quantity >= 3 ? (
                   <small className="bulk-order-hint">대량 주문은 전화 문의를 권장합니다.</small>
                 ) : null}
               </article>
